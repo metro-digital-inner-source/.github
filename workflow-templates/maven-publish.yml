@@ -30,35 +30,27 @@ jobs:
     - name: Maven deploy
       run: |
         mvn -s mvn-settings.xml -Dusername=${{ secrets.ARTIFACT_STORE_CLIENT_USERNAME }} -Dpassword=${{ secrets.ARTIFACT_STORE_CLIENT_PASSWORD }} -DskipTests -DperformRelease deploy
-    - name: Check existence of file pipeline-after.sh
-      id: exists_pipeline_after
-      uses: andstor/file-existence-action@v1
-      with:
-        files: "pipeline-after.sh"
-    - name: Execute after step, if file pipeline-after.sh exists
-      if: steps.exists_pipeline_after.outputs.files_exists == 'true'
+    - name: Execute after step
       run: |
-        chmod +x ./pipeline-after.sh
-        ./pipeline-after.sh
+        [ -s "./pipeline-after.sh" ] && {
+          chmod +x ./pipeline-after.sh
+          ./pipeline-after.sh
+        } || :
   notification:
     needs: [maven-push]
     runs-on: self-hosted
     if: failure()
     steps:
     - uses: actions/checkout@v2
-    - name: Check existence of file .teamschannel
-      id: exists_teamschannel
-      uses: andstor/file-existence-action@v1
-      with:
-        files: ".teamschannel"
     - name: Read teams channel from file
       id: teamschannel
-      if: steps.exists_teamschannel.outputs.files_exists == 'true'
       run: |
-        teams_channel=$(cat .teamschannel)
-        echo "::set-output name=webhook-url::$teams_channel"
+        [ -s "./.teamschannel" ] && {
+          teams_channel=$(cat .teamschannel)
+          echo "::set-output name=webhook-url::$teams_channel"
+        } || :
     - name: Send message to ms teams
-      if: steps.exists_teamschannel.outputs.files_exists == 'true'
+      if: steps.teamschannel.outputs.webhook-url != ''
       uses: aliencube/microsoft-teams-actions@v0.8.0
       with:
         webhook_uri: ${{ steps.teamschannel.outputs.webhook-url }}
@@ -73,12 +65,13 @@ jobs:
         files: ".watchers"
     - name: Read watchers from file
       id: watchers
-      if: steps.exists_watchers.outputs.files_exists == 'true'
       run: |
-        watchers=$(cat .watchers)
-        echo "::set-output name=email-ids::$watchers"
+        [ -s "./.watchers" ] && {
+          watchers=$(cat .watchers)
+          echo "::set-output name=email-ids::$watchers"
+        } || :
     - name: Send a notification mail
-      if: steps.exists_watchers.outputs.files_exists == 'true'
+      if: steps.watchers.outputs.email-ids != ''
       uses: wadeww/send-email-action@master
       with:
         server_address: ${{ secrets.SMTP_SERVER_ADDRESS }}
