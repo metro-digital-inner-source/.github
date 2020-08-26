@@ -43,14 +43,9 @@ jobs:
   notification:
     needs: [maven-push]
     runs-on: self-hosted
-    if: always()
+    if: failure()
     steps:
     - uses: actions/checkout@v2
-    - name: set workflow conclusion
-      uses: technote-space/workflow-conclusion-action@v1
-    - name: conclusion
-      run: |
-        echo ${{ env.WORKFLOW_CONCLUSION }}
     - name: Check existence of file .teamschannel
       id: exists_teamschannel
       uses: andstor/file-existence-action@v1
@@ -58,12 +53,12 @@ jobs:
         files: ".teamschannel"
     - name: Read teams channel from file
       id: teamschannel
-      if: contains( env.WORKFLOW_CONCLUSION, 'failure' ) && steps.exists_teamschannel.outputs.files_exists == 'true'
+      if: steps.exists_teamschannel.outputs.files_exists == 'true'
       run: |
         teams_channel=$(cat .teamschannel)
         echo "::set-output name=webhook-url::$teams_channel"
     - name: Send message to ms teams
-      if: contains( env.WORKFLOW_CONCLUSION, 'failure' ) && steps.exists_teamschannel.outputs.files_exists == 'true'
+      if: steps.exists_teamschannel.outputs.files_exists == 'true'
       uses: aliencube/microsoft-teams-actions@v0.8.0
       with:
         webhook_uri: ${{ steps.teamschannel.outputs.webhook-url }}
@@ -78,12 +73,12 @@ jobs:
         files: ".watchers"
     - name: Read watchers from file
       id: watchers
-      if: contains( env.WORKFLOW_CONCLUSION, 'failure' ) && steps.exists_watchers.outputs.files_exists == 'true'
+      if: steps.exists_watchers.outputs.files_exists == 'true'
       run: |
         watchers=$(cat .watchers)
         echo "::set-output name=email-ids::$watchers"
     - name: Send a notification mail
-      if: contains( env.WORKFLOW_CONCLUSION, 'failure' ) && steps.exists_watchers.outputs.files_exists == 'true'
+      if: steps.exists_watchers.outputs.files_exists == 'true'
       uses: wadeww/send-email-action@master
       with:
         server_address: ${{ secrets.SMTP_SERVER_ADDRESS }}
