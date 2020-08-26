@@ -1,0 +1,11 @@
+{
+    "name": "Metro Digital Test Workflow",
+    "description": "Metro digital test workflow template.",
+    "iconName": "thumbs-icon",
+    "categories": [
+        "Java"
+    ],
+    "filePatterns": [
+        "mvn-settings.yml$"
+    ]
+}
