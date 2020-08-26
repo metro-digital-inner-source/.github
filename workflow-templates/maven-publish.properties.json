@@ -1,6 +1,6 @@
 {
-    "name": "Metro Digital Test Workflow",
-    "description": "Metro digital test workflow template.",
+    "name": "Metro Digital Maven Publish",
+    "description": "Builds and publishes Java packages using maven",
     "iconName": "frog-icon",
     "categories": [
         "Java"
