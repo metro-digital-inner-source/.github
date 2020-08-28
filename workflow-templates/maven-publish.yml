@@ -55,9 +55,9 @@ jobs:
       with:
         webhook_uri: ${{ steps.teamschannel.outputs.webhook-url }}
         title: Github Workflow Status
-        summary: Maven Push failed
-        sections: '[{ "activityTitle": "Failed!!!",  "activitySubtitle": "Event triggered by ${{ github.event.head_commit.author.name }}", "activityText": "**Push failed**" }]'
-        actions: '[{ "@context": "http://schema.org", "@type": "OpenUri", "name": "Review Commit Diffs", "targets": [{ "os": "default", "uri": "${{ github.event.compare }}" }] }]'
+        summary: Maven Push failed for ${{ github.repository }}
+        sections: '[{ "activityTitle": "Maven publish failed!",  "activitySubtitle": "Event triggered by ${{ github.event.head_commit.author.name }}", "activityText": "**Commit message**: ${{ github.event.head_commit.message}}, [click here to go the commit.](${{ github.event.head_commit.url }})"}]'
+        actions: '[{ "@context": "http://schema.org", "@type": "OpenUri", "name": "Review Commit Diffs", "targets": [{ "os": "default", "uri": "${{ github.event.compare }}" }] }, { "@context": "http://schema.org", "@type": "OpenUri", "name": "Failed Build", "targets": [{ "os": "default", "uri": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" }] }]'
     - name: Check existence of file .watchers
       id: exists_watchers
       uses: andstor/file-existence-action@v1
@@ -78,7 +78,16 @@ jobs:
         port: 25
         subject: Github Workflow failed
         body: |
-          Hi Users,
-          Maven push failed.
+          Hello,
+
+          The Github workflow publishing maven artifacts failed!
+
+          Repository: https://github.com/${{ github.repository }}
+          Commit Message: ${{ github.event.head_commit.message }}
+          Commit Link: ${{ github.event.head_commit.url }}
+          Failed Build: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          Regards,
+          2Tier Deployment Team
         to: ${{ steps.watchers.outputs.email-ids }}
         from: ${{ env.FROM_NOTIFICATION_EMAIL_ADDRESS }}
