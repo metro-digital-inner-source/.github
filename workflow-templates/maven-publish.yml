@@ -67,7 +67,12 @@ jobs:
       id: watchers
       run: |
         [ -s "./.watchers" ] && {
-          watchers=$(cat .watchers)
+          watchers=()
+          while read email;
+          do
+            watchers="${email},${watchers}"
+          done <<< $(cat .watchers)
+          watchers=${watchers%?}
           echo "::set-output name=email-ids::$watchers"
         } || :
     - name: Send a notification mail
