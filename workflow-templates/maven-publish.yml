@@ -6,6 +6,7 @@ on:
     branches: [ $default-branch ]
 env:
   FROM_NOTIFICATION_EMAIL_ADDRESS: 'do-not-reply@example.com'
+  SMTP_SERVER_ADDRESS: 'smtpserver.example.com'
 jobs:
   maven-push:
     runs-on: self-hosted
@@ -79,7 +80,7 @@ jobs:
       if: steps.watchers.outputs.email-ids != ''
       uses: wadeww/send-email-action@master
       with:
-        server_address: ${{ secrets.SMTP_SERVER_ADDRESS }}
+        server_address: ${{ env.SMTP_SERVER_ADDRESS }}
         port: 25
         subject: Github Workflow failed
         body: |
