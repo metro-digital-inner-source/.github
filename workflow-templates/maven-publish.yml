@@ -8,8 +8,10 @@ env:
   FROM_NOTIFICATION_EMAIL_ADDRESS: 'do-not-reply@example.com'
   SMTP_SERVER_ADDRESS: 'smtpserver.example.com'
 jobs:
-  verify-workflow-settings:
+  create-issue-for-missing-smtp-address:
     runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.smtpserver.outputs.status }}
     steps:
     - name: verify smtp server address
       id: smtpserver
@@ -23,6 +25,7 @@ jobs:
         route: POST /repos/:repo/issues
         repo: ${{ github.repository }}
         title: Fix the smtp server address in the maven-publish workflow
+        labels: '[ "bug" ]'
         body: |
           The repository ${{ github.repository }} is configured to have .watchers
           file which sends email notifications on a failed workflow run. In order to send
@@ -32,15 +35,51 @@ jobs:
           "SMTP_SERVER_ADDRESS" in the maven-publish workflow.
 
           https://github.com/${{ github.repository }}/blob/${{ github.sha }}/.github/workflows/maven-publish.yml#L9
-        labels: '[ "bug" ]'
       env:
         GITHUB_TOKEN: ${{ github.token }}
+  create-issue-for-missing-artifactstore-credentials:
+    runs-on: ubuntu-latest
+    outputs:
+      credentials: ${{ steps.artifactstore.outputs.credentials }}
+    steps:
+    - name: verify artifact store secrets
+      id: artifactstore
+      if: env.username == '' || env.password == ''
+      run: |
+        echo "::set-output name=credentials::invalid"
+      env:
+        username: ${{ secrets.ARTIFACT_STORE_CLIENT_USERNAME }}
+        password: ${{ secrets.ARTIFACT_STORE_CLIENT_PASSWORD }}
+    - name: create issue for missing artifact store credentials
+      if: contains(steps.artifactstore.outputs.credentials, 'invalid')
+      uses: octokit/request-action@v2.x
+      with:
+        route: POST /repos/:repo/issues
+        repo: ${{ github.repository }}
+        title: Create repository secrets for artifact store
+        labels: '[ "bug" ]'
+        body: |
+          The repository ${{ github.repository }} is configured to have maven publish
+          workflow which publishes maven artifacts to an artifact store. In order to
+          push these artifacts, workflow must know the credentials of the target artifact
+          store.
+
+          Please [create the respository secrets](https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets#creating-encrypted-secrets-for-a-repository),
+          "ARTIFACT_STORE_CLIENT_USERNAME" and "ARTIFACT_STORE_CLIENT_PASSWORD" with a valid
+          username and password for the artifact store.
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+  exit-workflow:
+    runs-on: ubuntu-latest
+    needs: [create-issue-for-missing-smtp-address, create-issue-for-missing-artifactstore-credentials]
+    steps:
     - name: exit workflow
-      if: contains(steps.smtpserver.outputs.status, 'invalid')
+      if: (needs.create-issue-for-missing-smtp-address.status == 'invalid') || (needs.create-issue-for-missing-artifactstore-credentials.outputs.credentials == 'invalid')
       run: |
         exit 1
   maven-push:
     runs-on: self-hosted
+    needs: [exit-workflow]
     steps:
     - uses: actions/checkout@v2
     - name: Set up JDK 1.8
@@ -69,7 +108,7 @@ jobs:
           ./pipeline-after.sh
         } || :
   notification:
-    needs: [maven-push]
+    needs: [maven-push, exit-workflow]
     runs-on: self-hosted
     if: failure()
     steps:
