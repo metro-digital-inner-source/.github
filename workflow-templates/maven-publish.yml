@@ -8,6 +8,37 @@ env:
   FROM_NOTIFICATION_EMAIL_ADDRESS: 'do-not-reply@example.com'
   SMTP_SERVER_ADDRESS: 'smtpserver.example.com'
 jobs:
+  verify-workflow-settings:
+    runs-on: ubuntu-latest
+    steps:
+    - name: verify smtp server address
+      id: smtpserver
+      if: contains(env.SMTP_SERVER_ADDRESS, 'example')
+      run: |
+        echo "::set-output name=status::invalid"
+    - name: create issue for missing smtp server address
+      if: contains(steps.smtpserver.outputs.status, 'invalid')
+      uses: octokit/request-action@v2.x
+      with:
+        route: POST /repos/:repo/issues
+        repo: ${{ github.repository }}
+        title: Fix the smtp server address in the maven-publish workflow
+        body: |
+          The repository ${{ github.repository }} is configured to have .watchers
+          file which sends email notifications on a failed workflow run. In order to send
+          these email notifications the workflow must know the SMTP server address.
+
+          Please provide a valid SMTP server address for the environment variable
+          "SMTP_SERVER_ADDRESS" in the maven-publish workflow.
+
+          https://github.com/${{ github.repository }}/blob/${{ github.sha }}/.github/workflows/maven-publish.yml#L9
+        labels: '[ "bug" ]'
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+    - name: exit workflow
+      if: contains(steps.smtpserver.outputs.status, 'invalid')
+      run: |
+        exit 1
   maven-push:
     runs-on: self-hosted
     steps:
