@@ -9,8 +9,32 @@ env:
   FROM_NOTIFICATION_EMAIL_ADDRESS: 'do-not-reply@example.com'
   SMTP_SERVER_ADDRESS: 'smtpserver.example.com'
 jobs:
+  check-for-existing-issues:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get open issues labeled as bug
+      id: issues
+      uses: octokit/request-action@v2.x
+      with:
+        route: GET /repos/:owner/:repo/issues
+        owner: metro-digital-inner-source
+        repo: spring-boot-simple-mvn-lib
+        state: open
+        labels: bug
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+    - name: Check for issues
+      run: |
+        exists=$(echo $issues | jq '.[].labels')
+        if [[ -n "$exists" ]]; then
+          echo "::error::Please resolve the issues labeled as bug for ${{ github.repository }}"
+          exit 1
+        fi
+      env:
+        issues: ${{ steps.issues.outputs.data }}
   create-issue-for-missing-smtp-address:
     runs-on: ubuntu-latest
+    needs: [check-for-existing-issues]
     outputs:
       status: ${{ steps.smtpserver.outputs.status }}
     steps:
@@ -40,6 +64,7 @@ jobs:
         GITHUB_TOKEN: ${{ github.token }}
   create-issue-for-missing-artifactstore-credentials:
     runs-on: ubuntu-latest
+    needs: [check-for-existing-issues]
     outputs:
       credentials: ${{ steps.artifactstore.outputs.credentials }}
     steps:
@@ -109,7 +134,7 @@ jobs:
           ./pipeline-after.sh
         } || :
   notification:
-    needs: [maven-push, exit-workflow]
+    needs: [maven-push, exit-workflow, check-for-existing-issues]
     runs-on: self-hosted
     if: failure()
     steps:
