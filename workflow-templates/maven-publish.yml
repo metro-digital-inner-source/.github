@@ -32,7 +32,7 @@ jobs:
         fi
       env:
         issues: ${{ steps.issues.outputs.data }}
-  create-issue-for-missing-smtp-address:
+  check-for-smtp-address:
     runs-on: ubuntu-latest
     needs: [check-for-existing-issues]
     outputs:
@@ -62,7 +62,7 @@ jobs:
           https://github.com/${{ github.repository }}/blob/${{ github.sha }}/.github/workflows/maven-publish.yml#L9
       env:
         GITHUB_TOKEN: ${{ github.token }}
-  create-issue-for-missing-artifactstore-credentials:
+  check-for-artifactstore-credentials:
     runs-on: ubuntu-latest
     needs: [check-for-existing-issues]
     outputs:
@@ -95,17 +95,18 @@ jobs:
           username and password for the artifact store.
       env:
         GITHUB_TOKEN: ${{ github.token }}
-  exit-workflow:
+  finalize-check:
     runs-on: ubuntu-latest
-    needs: [create-issue-for-missing-smtp-address, create-issue-for-missing-artifactstore-credentials]
+    needs: [check-for-smtp-address, check-for-artifactstore-credentials]
     steps:
     - name: exit workflow
-      if: (needs.create-issue-for-missing-smtp-address.status == 'invalid') || (needs.create-issue-for-missing-artifactstore-credentials.outputs.credentials == 'invalid')
+      if: (needs.check-for-smtp-address.outputs.status == 'invalid') || (needs.check-for-artifactstore-credentials.outputs.credentials == 'invalid')
       run: |
+        echo "::error::Please resolve the issues labeled as bug for ${{ github.repository }}"
         exit 1
   maven-push:
     runs-on: self-hosted
-    needs: [exit-workflow]
+    needs: [finalize-check]
     steps:
     - uses: actions/checkout@v2
     - name: Set up JDK 1.8
@@ -134,7 +135,7 @@ jobs:
           ./pipeline-after.sh
         } || :
   notification:
-    needs: [maven-push, exit-workflow, check-for-existing-issues]
+    needs: [maven-push, finalize-check, check-for-existing-issues]
     runs-on: self-hosted
     if: failure()
     steps:
