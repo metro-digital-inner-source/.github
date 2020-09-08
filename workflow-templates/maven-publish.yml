@@ -16,9 +16,8 @@ jobs:
       id: issues
       uses: octokit/request-action@v2.x
       with:
-        route: GET /repos/:owner/:repo/issues
-        owner: metro-digital-inner-source
-        repo: spring-boot-simple-mvn-lib
+        route: GET /repos/:repo/issues
+        repo: ${{ github.repository }}
         state: open
         labels: bug
       env:
