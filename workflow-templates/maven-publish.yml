@@ -58,7 +58,7 @@ jobs:
           Please provide a valid SMTP server address for the environment variable
           "SMTP_SERVER_ADDRESS" in the maven-publish workflow.
 
-          https://github.com/${{ github.repository }}/blob/${{ github.sha }}/.github/workflows/maven-publish.yml#L9
+          https://github.com/${{ github.repository }}/blob/${{ github.sha }}/.github/workflows/maven-publish.yml#L10
       env:
         GITHUB_TOKEN: ${{ github.token }}
   check-for-artifactstore-credentials:
