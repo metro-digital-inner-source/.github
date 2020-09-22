@@ -49,10 +49,12 @@ jobs:
         title: Fix the Jenkins URL in the Jenkins Webhook workflow
         labels: '[ "bug" ]'
         body: |
-          The repository ${{ github.repository }} is configured to trigger a
-          Jenkins job using Jenkins webhook workflow.
+          On push to the repository ${{ github.repository }} a workflow is
+          triggered which in turn triggers a Jenkins job using a Jenkins
+          webhook.
 
-          Please provide a valid Jenkins URL for the environment variable
+          The Jenkins server URL must be configured for this to work.  Please
+          provide a valid Jenkins URL for the environment variable
           "JENKINS_URL" in the Jenkins Webhook workflow.
 
           https://github.com/${{ github.repository }}/blob/${{ github.sha }}/.github/workflows/jenkins-webhook.yml#L7
@@ -78,11 +80,14 @@ jobs:
         title: Fix the Jenkins job name in the Jenkins Webhook workflow
         labels: '[ "bug" ]'
         body: |
-          The repository ${{ github.repository }} is configured to trigger a
-          Jenkins job using Jenkins webhook workflow.
+          On push to the repository ${{ github.repository }} a workflow is
+          triggered which in turn triggers a Jenkins job using a Jenkins
+          webhook.
 
-          Please provide a valid Jenkins job name for the environment variable
-          "JENKINS_JOB" in the Jenkins Webhook workflow.
+          The name of the Jenkins job which should be triggered must be
+          configured for this to work.  Please provide a valid Jenkins job name
+          for the environment variable "JENKINS_JOB" in the Jenkins Webhook
+          workflow.
 
           https://github.com/${{ github.repository }}/blob/${{ github.sha }}/.github/workflows/jenkins-webhook.yml#L8
       env:
@@ -109,23 +114,31 @@ jobs:
         title: Create repository secret for Jenkins auth token
         labels: '[ "bug" ]'
         body: |
-          The repository ${{ github.repository }} is configured to have Jenkins Webhook
-          workflow which tirggers a Jenkins job on configured Jenkins URL in the workflow,
-          workflow must know the auth_token to trigger the Jenkins job.
+          '
+          On push to the repository ${{ github.repository }} a workflow is
+          triggered which in turn triggers a Jenkins job using a Jenkins
+          webhook.
 
-          * Please check if the version of 2tier helm chart being used is equal to or greater
-          than v1.8.0.
+          The Jenkins webhook is configured to use an auth_token.
 
-          * Please check the values.yaml of your ci repository, if the respective job is
-          adapted/configured so that it can be triggered using Jenkins Webhook workflow.
-          For configuring the job in values.yaml, refer the change log for version 1.8.0
+          Please [create the respository secret](https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets#creating-encrypted-secrets-for-a-repository),
+          "JENKINS_AUTH_TOKEN" with a valid auth token matching the one
+          configured for the Jenkins job.
+
+
+          **Note**
+
+          If you are using the k8s-based CI, then you must also use at least
+          v1.8.0 of the 2tier Helm chart.
+
+
+          The Jenkins job which is triggered via this workflow, must be configured accordingly
+          in the values.yaml file of your CI repository.
+
+
+          See the change log for version 1.8.0 for how to do this
           [2tier-helm chart documentation](https://helm.metrosystems.net/charts/twotier/jenkins).
-
-
-          * Once values.yaml was adapted/configured, please
-          [create the respository secret](https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets#creating-encrypted-secrets-for-a-repository),
-          "JENKINS_AUTH_TOKEN" with a valid auth token matching to the one configured in the
-          values.yml of your CI repository for the respective job.
+          '
       env:
         GITHUB_TOKEN: ${{ github.token }}
   finalize-check:
