@@ -1,0 +1,5 @@
+{
+    "name": "Metro Digital: Jenkins Webhook",
+    "description": "Triggers a Jenkins job using a build auth token",
+    "iconName": "METRONOM-logo"
+}

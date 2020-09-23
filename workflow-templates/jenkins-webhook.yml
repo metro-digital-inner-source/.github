@@ -1,0 +1,160 @@
+name: Jenkins Webhook
+on:
+  workflow_dispatch:
+  push:
+    branches: [ $default-branch ]
+env:
+  JENKINS_URL: "https://jenkins.example.com"
+  JENKINS_JOB: "example-job"
+jobs:
+  check-for-existing-issues:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get open issues labeled as bug
+      id: issues
+      uses: octokit/request-action@v2.x
+      with:
+        route: GET /repos/:repo/issues
+        repo: ${{ github.repository }}
+        state: open
+        labels: bug
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+    - name: Check for issues
+      run: |
+        exists=$(echo $issues | jq '.[].labels')
+        if [[ -n "$exists" ]]; then
+          echo "::error::Please resolve the issues labeled as bug for ${{ github.repository }}"
+          exit 1
+        fi
+      env:
+        issues: ${{ steps.issues.outputs.data }}
+  check-for-jenkins-url:
+    runs-on: ubuntu-latest
+    needs: [check-for-existing-issues]
+    outputs:
+      status: ${{ steps.jenkins_url.outputs.status }}
+    steps:
+    - name: verify Jenkins URL
+      id: jenkins_url
+      if: contains(env.JENKINS_URL, 'jenkins.example.com')
+      run: |
+        echo "::set-output name=status::invalid"
+    - name: create issue for missing Jenkins URL
+      if: contains(steps.jenkins_url.outputs.status, 'invalid')
+      uses: octokit/request-action@v2.x
+      with:
+        route: POST /repos/:repo/issues
+        repo: ${{ github.repository }}
+        title: Fix the Jenkins URL in the Jenkins Webhook workflow
+        labels: '[ "bug" ]'
+        body: |
+          On push to the repository ${{ github.repository }} a workflow is
+          triggered which in turn triggers a Jenkins job using a Jenkins
+          webhook.
+
+          The Jenkins server URL must be configured for this to work.  Please
+          provide a valid Jenkins URL for the environment variable
+          "JENKINS_URL" in the Jenkins Webhook workflow.
+
+          https://github.com/${{ github.repository }}/blob/${{ github.sha }}/.github/workflows/jenkins-webhook.yml#L7
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+  check-for-jenkins-job:
+    runs-on: ubuntu-latest
+    needs: [check-for-existing-issues]
+    outputs:
+      status: ${{ steps.jenkins_job.outputs.status }}
+    steps:
+    - name: verify Jenkins job
+      id: jenkins_job
+      if: contains(env.JENKINS_JOB, 'example-job')
+      run: |
+        echo "::set-output name=status::invalid"
+    - name: create issue for missing Jenkins URL
+      if: contains(steps.jenkins_job.outputs.status, 'invalid')
+      uses: octokit/request-action@v2.x
+      with:
+        route: POST /repos/:repo/issues
+        repo: ${{ github.repository }}
+        title: Fix the Jenkins job name in the Jenkins Webhook workflow
+        labels: '[ "bug" ]'
+        body: |
+          On push to the repository ${{ github.repository }} a workflow is
+          triggered which in turn triggers a Jenkins job using a Jenkins
+          webhook.
+
+          The name of the Jenkins job which should be triggered must be
+          configured for this to work.  Please provide a valid Jenkins job name
+          for the environment variable "JENKINS_JOB" in the Jenkins Webhook
+          workflow.
+
+          https://github.com/${{ github.repository }}/blob/${{ github.sha }}/.github/workflows/jenkins-webhook.yml#L8
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+  check-for-jenkins-auth-token:
+    runs-on: ubuntu-latest
+    needs: [check-for-existing-issues]
+    outputs:
+      auth_token: ${{ steps.jenkins.outputs.auth_token }}
+    steps:
+    - name: verify Jenkins auth token
+      id: jenkins
+      if: env.auth_token == ''
+      run: |
+        echo "::set-output name=auth_token::invalid"
+      env:
+        auth_token: ${{ secrets.JENKINS_AUTH_TOKEN }}
+    - name: create issue for missing Jenkins auth token
+      if: contains(steps.jenkins.outputs.auth_token, 'invalid')
+      uses: octokit/request-action@v2.x
+      with:
+        route: POST /repos/:repo/issues
+        repo: ${{ github.repository }}
+        title: Create repository secret for Jenkins auth token
+        labels: '[ "bug" ]'
+        body: |
+          '
+          On push to the repository ${{ github.repository }} a workflow is
+          triggered which in turn triggers a Jenkins job using a Jenkins
+          webhook.
+
+          The Jenkins webhook is configured to use an auth_token.
+
+          Please [create the respository secret](https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets#creating-encrypted-secrets-for-a-repository),
+          "JENKINS_AUTH_TOKEN" with a valid auth token matching the one
+          configured for the Jenkins job.
+
+
+          **Note**
+
+          If you are using the k8s-based CI, then you must also use at least
+          v1.8.0 of the 2tier Helm chart.
+
+
+          The Jenkins job which is triggered via this workflow, must be configured accordingly
+          in the values.yaml file of your CI repository.
+
+
+          See the change log for version 1.8.0 for how to do this
+          [2tier-helm chart documentation](https://helm.metrosystems.net/charts/twotier/jenkins).
+          '
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+  finalize-check:
+    runs-on: ubuntu-latest
+    needs: [check-for-jenkins-url, check-for-jenkins-job, check-for-jenkins-auth-token]
+    steps:
+    - name: exit workflow
+      if: (needs.check-for-jenkins-url.outputs.status == 'invalid') || (needs.check-for-jenkins-job.outputs.credentials == 'invalid') || (needs.check-for-jenkins-auth-token.outputs.credentials == 'invalid')
+      run: |
+        echo "::error::Please resolve the issues labeled as bug for ${{ github.repository }}"
+        exit 1
+  trigger-jenkins-job:
+    runs-on: self-hosted
+    needs: [check-for-jenkins-url, check-for-jenkins-job, check-for-jenkins-auth-token, finalize-check]
+    steps:
+      - name: Triggering Jenkins job
+        run: |
+          curl -v --fail -X POST "${{ env.JENKINS_URL }}/buildByToken/build?job=${{ env.JENKINS_JOB }}&token=${{ secrets.JENKINS_AUTH_TOKEN }}" || \
+            (echo "::warning:: check, whether your GitHub secret 'JENKINS_AUTH_TOKEN' matches the 'authToken' configured for your Jenkins job in values.yaml";exit 1)
