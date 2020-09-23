@@ -151,7 +151,7 @@ jobs:
         echo "::error::Please resolve the issues labeled as bug for ${{ github.repository }}"
         exit 1
   trigger-jenkins-job:
-    runs-on: self-hosted
+    runs-on: [self-hosted, Linux, metro-network]
     needs: [check-for-jenkins-url, check-for-jenkins-job, check-for-jenkins-auth-token, finalize-check]
     steps:
       - name: Triggering Jenkins job
