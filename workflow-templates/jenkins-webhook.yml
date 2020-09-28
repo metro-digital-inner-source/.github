@@ -53,7 +53,7 @@ jobs:
           triggered which in turn triggers a Jenkins job using a Jenkins
           webhook.
 
-          The Jenkins server URL must be configured for this to work.  Please
+          The Jenkins server URL must be configured for this to work. Please
           provide a valid Jenkins URL for the environment variable
           "JENKINS_URL" in the Jenkins Webhook workflow.
 
@@ -85,7 +85,7 @@ jobs:
           webhook.
 
           The name of the Jenkins job which should be triggered must be
-          configured for this to work.  Please provide a valid Jenkins job name
+          configured for this to work. Please provide a valid Jenkins job name
           for the environment variable "JENKINS_JOB" in the Jenkins Webhook
           workflow.
 
@@ -119,11 +119,11 @@ jobs:
           triggered which in turn triggers a Jenkins job using a Jenkins
           webhook.
 
-          The Jenkins webhook is configured to use an auth_token.
+          The Jenkins webhook is configured to use an auth token.
 
-          Please [create the respository secret](https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets#creating-encrypted-secrets-for-a-repository),
+          Please [create the repository secret](https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets#creating-encrypted-secrets-for-a-repository),
           "JENKINS_AUTH_TOKEN" with a valid auth token matching the one
-          configured for the Jenkins job.
+          configured for the Jenkins job.          
 
 
           **Note**
