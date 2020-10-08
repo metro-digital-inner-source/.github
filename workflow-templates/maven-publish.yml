@@ -104,7 +104,7 @@ jobs:
         echo "::error::Please resolve the issues labeled as bug for ${{ github.repository }}"
         exit 1
   maven-push:
-    runs-on: self-hosted
+    runs-on: [self-hosted, Linux, metro-network]
     needs: [finalize-check]
     steps:
     - uses: actions/checkout@v2
@@ -135,7 +135,7 @@ jobs:
         } || :
   notification:
     needs: [maven-push, finalize-check, check-for-existing-issues]
-    runs-on: self-hosted
+    runs-on: [self-hosted, Linux, metro-network]
     if: failure()
     steps:
     - uses: actions/checkout@v2
