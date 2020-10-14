@@ -1,0 +1,42 @@
+name: 'License Scanner'
+
+env:
+  SECRET_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  CONDITIONS_FILENAME: oss_ampel.yml
+
+on: [push]
+
+jobs:
+  license-scan-runner:
+    runs-on: ubuntu-latest
+    name: License Scan Main Workflow
+    steps:
+      - name: Checkout project, prepare the run
+        uses: actions/checkout@v2.3.2
+      - name: Checkout conditions file to working folder
+        uses: actions/checkout@v2.3.2
+        id: license-scanner-conditions-file
+        with:
+          repository: metronom-gmbh/devsecops-pipeline-license-conditions-file
+          path: devsecops-pipeline-license-conditions-file
+          token: ${{ secrets.SECRET_TOKEN }} 
+      - name: Check running conditions with script
+        run: |
+          ls $GITHUB_WORKSPACE
+          ls $GITHUB_WORKSPACE/devsecops-pipeline-license-conditions-file
+      - name: run the license scanning script
+        id: step2
+        run: |
+          output=$(python3 $GITHUB_WORKSPACE/.github/workflows/license-scan/license_scan.py)
+          echo "::set-output name=outputs::$output"
+          echo $output > license-scan-results.log
+      - name: Upload artifact on the pipeline - JSON payload
+        uses: actions/upload-artifact@v2
+        with:
+          name: license-scan-results-json.json
+          path: /home/runner/work/**/license-scan-result-json.json
+      - name: Upload artifact to pipeline - HTML Report
+        uses: actions/upload-artifact@v2
+        with: 
+          name: license-scan-report.html
+          path: /home/runner/work/**/license-scan-report.html
