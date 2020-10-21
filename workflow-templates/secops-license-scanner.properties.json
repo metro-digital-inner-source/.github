@@ -1,0 +1,5 @@
+{
+    "name": "Metro Digital: License Scanner Worfklow Template",
+    "description": "Scans projects for the licenses used in dependencies and the copyleft effects using Github API data.",
+    "iconName": "METRONOM-logo"
+}

@@ -1,0 +1,61 @@
+# This is a basic workflow template to help out setup the license scanner tool
+name: 'License Scanning Job'
+
+# Setup here your own branch and/or setup you wish to have the license scanner to run. Master branch is used here as a sample.
+# We suggest you setup a separate workflow that does not block your normal pipeline.
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+# There are some environment settings which are required for the license scanner to run.
+# You can set these up at the beginning of the file. These variables are setup when Github spawns a container for the workflow.
+# License Scanner requires a yaml conditions file which needs to be setup properly in a repository. This is stored in CONDITIONS_REPOSITORY env variable.
+# The scanner REQUIRES you to have a PAT ( Personal Access Token) defined in your repository, otherwise it will NOT work.  This is stored with the name SECRET_TOKEN,  but you can name it however you want. 
+env:
+  SECRET_TOKEN: ${{ secrets.SECRET_TOKEN }} # make sure SECRET_TOKEN is the name of your PAT defined in repo secrets. If not, use the name you have given to your token in Secrets section of the project.
+  CONDITIONS_FILENAME: oss_ampel.yml
+  CONDITIONS_REPOSITORY: metro-digital-inner-source/devsecops-pipeline-license-conditions-file
+  CONDITIONS_FILE_CHECKOUTPATH: devsecops-pipeline-license-conditions-file
+  LICENSE_SCANNER_TOOL: metro-digital-inner-source/secops-license-scanner
+  LICENSE_SCANNER_CHECKOUTPATH: secops-license-scanner 
+ 
+
+# generic workflow steps are (usually) the following: checkout your project, check out the conditions file, run the scanner, see results...
+# When setting up paths for the checkout actions be careful where you check stuff out... if you modify this template, then it would be best to use a parametrized approach using environment variables.
+# The best approach would be to use the last part of the repository naming (easier to handle), but hard-coded naming should be avoided as the script makes use of environment vars
+jobs:
+  check-out-license-scanner:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v2.3.2
+      - name: Checkout conditions file from the repository
+        uses: actions/checkout@v2.3.2
+        id: license-scanner-conditions-file
+        with:
+          repository: ${{ env.CONDITIONS_REPOSITORY }}
+          path: devsecops-pipeline-license-conditions-file 
+          token: ${{ secrets.SECRET_TOKEN }} 
+      - name: Checkout license scanner tool to the local path
+        uses: actions/checkout@v2.3.2
+        id: license-scanner-tool
+        with:
+          repository: ${{ env.LICENSE_SCANNER_TOOL }}
+          path: secops-license-scanner
+          token: ${{ secrets.SECRET_TOKEN }}
+      - name: run-license-scanner-step
+        id: license-scanner-run-step
+        run: |
+          output=$(python3 $GITHUB_WORKSPACE/$LICENSE_SCANNER_CHECKOUTPATH/license-scan/license_scan.py)
+          echo "::set-output name=outputs::$output"
+      - name: Upload artifact to pipeline - JSON
+        uses: actions/upload-artifact@v2
+        with:
+          name: license-scan-results-json.json
+          path: /home/runner/work/**/license-scan-result-json.json
+      - name: Upload artifact to pipeline - HTML Report
+        uses: actions/upload-artifact@v2
+        with: 
+          name: license-scan-report.html
+          path: /home/runner/work/**/license-scan-report.html
