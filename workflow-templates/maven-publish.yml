@@ -2,9 +2,9 @@ name: Maven publish
 on:
   workflow_dispatch:
   push:
-    branches: [ $default-branch ]
+    branches: [master, main]
   pull_request:
-    branches: [ $default-branch ]
+    branches: [master, main]
 env:
   FROM_NOTIFICATION_EMAIL_ADDRESS: 'do-not-reply@example.com'
   SMTP_SERVER_ADDRESS: 'smtpserver.example.com'
