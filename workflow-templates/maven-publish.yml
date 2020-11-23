@@ -7,7 +7,9 @@ on:
     branches: [master, main]
 env:
   FROM_NOTIFICATION_EMAIL_ADDRESS: 'do-not-reply@example.com'
-  SMTP_SERVER_ADDRESS: 'smtpserver.example.com'
+  SMTP_SERVER_ADDRESS: 'www.example.com'
+  JAVA_VERSION: '1.8'
+  MAVEN_VERSION: '3.5.4'
 jobs:
   check-for-existing-issues:
     runs-on: ubuntu-latest
@@ -56,9 +58,11 @@ jobs:
           these email notifications the workflow must know the SMTP server address.
 
           Please provide a valid SMTP server address for the environment variable
-          "SMTP_SERVER_ADDRESS" in the maven-publish workflow.
+          `SMTP_SERVER_ADDRESS` in the maven-publish workflow.
 
           https://github.com/${{ github.repository }}/blob/${{ github.sha }}/.github/workflows/maven-publish.yml#L10
+
+          If you are working in the METRO network, the server `viruswall.mgi.de` is a good choice for `SMTP_SERVER_ADDRESS`.
       env:
         GITHUB_TOKEN: ${{ github.token }}
   check-for-artifactstore-credentials:
@@ -90,16 +94,115 @@ jobs:
           store.
 
           Please [create the respository secrets](https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets#creating-encrypted-secrets-for-a-repository),
-          "ARTIFACT_STORE_CLIENT_USERNAME" and "ARTIFACT_STORE_CLIENT_PASSWORD" with a valid
+          `ARTIFACT_STORE_CLIENT_USERNAME` and `ARTIFACT_STORE_CLIENT_PASSWORD` with a valid
           username and password for the artifact store.
       env:
         GITHUB_TOKEN: ${{ github.token }}
+  check-mvn-settings:
+    runs-on: ubuntu-latest
+    needs: [check-for-existing-issues]
+    outputs:
+      status: ${{ steps.consolidate-mvn-checks.outputs.status }}
+    steps: 
+    - uses: actions/checkout@v2
+    - name: check existence of file mvn-settings
+      id: mvn-settings-exists
+      uses: andstor/file-existence-action@v1
+      with:
+        files: "mvn-settings.xml"
+    - name: create issue for creating mvn-settings file
+      if: steps.mvn-settings-exists.outputs.files_exists == 'false'
+      uses: octokit/request-action@v2.x
+      with:
+        route: POST /repos/:repo/issues
+        repo: ${{ github.repository }}
+        title: Create a mvn-setting.xml file
+        labels: '[ "bug" ]'
+        body: |
+          The repository ${{ github.repository }} is configured to use maven,
+          but the `mvn-settings.xml` file is missing. This file is needed to 
+          authenticate with the artifact store (e.g. artifactory or nexus).
+
+          Please create a `mvn-settings.xml` file which contains (and don't contain secrets)
+
+          ```
+
+          <id>maven-releases</id>
+
+          <username>${username}</username>
+
+          <password>${password}</password>
+
+          ```
+
+          Please be aware, that the `<id>`s have to match the ones you use 
+          in `pom.xml` in the section `<distributionManagement>`.
+
+          You can take an [example from here](https://github.com/metro-digital-inner-source/.github/blob/master/documentation/wf-maven-publish/mvn-settings.xml)
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+    - name: check for secrets in mvn-settings
+      id: check-for-secrets
+      run: |
+        [ -s "./mvn-settings.xml" ] && {
+          secrets=$(cat mvn-settings.xml | grep '<password>' | grep -v -e '<password>${.*}</password>')
+          if [ -z "$secrets"]; then
+            echo "::set-output name=contains::false"
+          else
+            echo "::set-output name=contains::true"
+          fi
+        } || :
+    - name: create issue if mvn-settings contains secrets
+      if: steps.check-for-secrets.outputs.contains == 'true'
+      uses: octokit/request-action@v2.x
+      with:
+        route: POST /repos/:repo/issues
+        repo: ${{ github.repository }}
+        title: File mvn-setting.xml contains secrets
+        labels: '[ "bug" ]'
+        body: |
+          The file `mvn-settings.xml` contains username or passwords. 
+          These should be stored as GitHub secrets of the repository. 
+
+          Please [create the respository secrets](https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets#creating-encrypted-secrets-for-a-repository),
+          `ARTIFACT_STORE_CLIENT_USERNAME` and `ARTIFACT_STORE_CLIENT_PASSWORD` with a valid
+          username and password for the artifact store.
+
+          **And delete the secrets from the `mvn-settings.xml` file!**
+
+          Additionally create a `mvn-settings.xml` file which contains
+
+          ```
+
+          <id>maven-releases</id>
+
+          <username>${username}</username>
+
+          <password>${password}</password>
+
+          ```
+
+          Please be aware, that the `<id>`s have to match the ones you use 
+          in `pom.xml` in the section `<distributionManagement>`.
+
+          You can take an [example from here](https://github.com/metro-digital-inner-source/.github/blob/master/documentation/wf-maven-publish/mvn-settings.xml)
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+    - name: consolidate mvn checks
+      id: consolidate-mvn-checks
+      run: |
+        if [ "${{steps.mvn-settings-exists.outputs.files_exists}}" == "false" ] || [ "${{steps.check-for-secrets.outputs.contains}}" == "true" ]; then
+          echo "::set-output name=status::invalid"
+        fi
   finalize-check:
     runs-on: ubuntu-latest
-    needs: [check-for-smtp-address, check-for-artifactstore-credentials]
+    needs: [check-for-smtp-address, check-for-artifactstore-credentials, check-mvn-settings]
     steps:
     - name: exit workflow
-      if: (needs.check-for-smtp-address.outputs.status == 'invalid') || (needs.check-for-artifactstore-credentials.outputs.credentials == 'invalid')
+      if: > 
+        needs.check-for-smtp-address.outputs.status == 'invalid' 
+          || needs.check-for-artifactstore-credentials.outputs.credentials == 'invalid' 
+          || needs.check-mvn-settings.outputs.status == 'invalid'
       run: |
         echo "::error::Please resolve the issues labeled as bug for ${{ github.repository }}"
         exit 1
@@ -108,15 +211,15 @@ jobs:
     needs: [finalize-check]
     steps:
     - uses: actions/checkout@v2
-    - name: Set up JDK 1.8
+    - name: Set up JDK
       uses: actions/setup-java@v1
       with:
-        java-version: 1.8
+        java-version: ${{ env.JAVA_VERSION }}
     - name: Set up Maven
       # This action will use the unfixed toolkit/core modules from GitHub
       uses: stCarolas/setup-maven@v4
       with:
-        maven-version: 3.5.4
+        maven-version: ${{ env.MAVEN_VERSION }}
     - name: Run the Maven verify phase
       run: mvn -B verify --file pom.xml
     - name: Maven build
@@ -156,11 +259,6 @@ jobs:
         summary: Maven Push failed for ${{ github.repository }}
         sections: '[{ "activityTitle": "Maven publish failed!",  "activitySubtitle": "Event triggered by ${{ github.event.head_commit.author.name }}", "activityText": "**Commit message**: ${{ github.event.head_commit.message}}, [click here to go the commit.](${{ github.event.head_commit.url }})"}]'
         actions: '[{ "@context": "http://schema.org", "@type": "OpenUri", "name": "Review Commit Diffs", "targets": [{ "os": "default", "uri": "${{ github.event.compare }}" }] }, { "@context": "http://schema.org", "@type": "OpenUri", "name": "Failed Build", "targets": [{ "os": "default", "uri": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" }] }]'
-    - name: Check existence of file .watchers
-      id: exists_watchers
-      uses: andstor/file-existence-action@v1
-      with:
-        files: ".watchers"
     - name: Read watchers from file
       id: watchers
       run: |

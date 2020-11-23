@@ -6,6 +6,7 @@
         "Java"
     ],
     "filePatterns": [
-        "mvn-settings.yml$"
+        "mvn-settings.xml$",
+        "pom.xml$"
     ]
 }
