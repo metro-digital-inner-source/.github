@@ -227,11 +227,14 @@ jobs:
     - name: Maven test
       run: mvn -s mvn-settings.xml -Dusername=${{ secrets.ARTIFACT_STORE_CLIENT_USERNAME }} -Dpassword=${{ secrets.ARTIFACT_STORE_CLIENT_PASSWORD }} test
     - name: Maven generate Javadoc
+      if: github.event_name != 'pull_request'
       run: mvn -s mvn-settings.xml -Dusername=${{ secrets.ARTIFACT_STORE_CLIENT_USERNAME }} -Dpassword=${{ secrets.ARTIFACT_STORE_CLIENT_PASSWORD }} -DskipTests install javadoc:jar
     - name: Maven deploy
+      if: github.event_name != 'pull_request'
       run: |
         mvn -s mvn-settings.xml -Dusername=${{ secrets.ARTIFACT_STORE_CLIENT_USERNAME }} -Dpassword=${{ secrets.ARTIFACT_STORE_CLIENT_PASSWORD }} -DskipTests -DperformRelease deploy
     - name: Execute after step
+      if: github.event_name != 'pull_request'
       run: |
         [ -s "./pipeline-after.sh" ] && {
           chmod +x ./pipeline-after.sh
