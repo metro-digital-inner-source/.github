@@ -50,8 +50,8 @@ jobs:
         labels: '[ "bug" ]'
         body: |
           On push to the repository ${{ github.repository }} a workflow is
-          triggered which in turn triggers a Jenkins job using a Jenkins
-          webhook.
+          triggered which in turn triggers a Jenkins job using Jenkins
+          API.
 
           The Jenkins server URL must be configured for this to work. Please
           provide a valid Jenkins URL for the environment variable
@@ -81,13 +81,13 @@ jobs:
         labels: '[ "bug" ]'
         body: |
           On push to the repository ${{ github.repository }} a workflow is
-          triggered which in turn triggers a Jenkins job using a Jenkins
-          webhook.
+          triggered which in turn triggers a Jenkins job using Jenkins
+          API.
 
           The name of the Jenkins job which should be triggered must be
-          configured for this to work. Please provide a valid Jenkins job name
-          for the environment variable "JENKINS_JOB" in the Jenkins Webhook
-          workflow.
+          configured in the workflow to work. Please provide a valid Jenkins
+          job name for the environment variable "JENKINS_JOB" in the Jenkins
+          Webhook workflow.
 
           https://github.com/${{ github.repository }}/blob/${{ github.sha }}/.github/workflows/jenkins-webhook.yml#L8
       env:
@@ -116,28 +116,28 @@ jobs:
         body: |
           '
           On push to the repository ${{ github.repository }} a workflow is
-          triggered which in turn triggers a Jenkins job using a Jenkins
-          webhook.
+          triggered which in turn triggers a Jenkins job using Jenkins
+          API.
 
           The Jenkins webhook is configured to use an auth token.
 
           Please [create the repository secret](https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets#creating-encrypted-secrets-for-a-repository),
           "JENKINS_AUTH_TOKEN" with a valid auth token matching the one
-          configured for the Jenkins job.          
+          configured for the Jenkins job.
 
 
           **Note**
 
           If you are using the k8s-based CI, then you must also use at least
-          v1.8.0 of the 2tier Helm chart.
+          version 3.0.0 of the 2tier Helm chart.
 
 
           The Jenkins job which is triggered via this workflow, must be configured accordingly
           in the values.yaml file of your CI repository.
 
 
-          See the change log for version 1.8.0 for how to do this
-          [2tier-helm chart documentation](https://helm.metrosystems.net/charts/twotier/jenkins).
+          See the documentation for how to do this
+          [How to trigger k8s-based-ci pipeline from GitHub](https://github.com/metro-digital-inner-source/product-team-migration-manager/blob/master/documentation/how-to-trigger-k8s-based-ci-pipeline.md).
           '
       env:
         GITHUB_TOKEN: ${{ github.token }}
@@ -157,4 +157,4 @@ jobs:
       - name: Triggering Jenkins job
         run: |
           curl -v --fail -X POST "${{ env.JENKINS_URL }}/buildByToken/build?job=${{ env.JENKINS_JOB }}&token=${{ secrets.JENKINS_AUTH_TOKEN }}" || \
-            (echo "::warning:: check, whether your GitHub secret 'JENKINS_AUTH_TOKEN' matches the 'authToken' configured for your Jenkins job in values.yaml";exit 1)
+            (echo "::warning:: check, whether your GitHub secret 'JENKINS_AUTH_TOKEN' matches the 'authToken' configured for your Jenkins job in `jenkins-auth-tokens` k8s secret";exit 1)
