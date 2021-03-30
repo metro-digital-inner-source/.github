@@ -1,0 +1,29 @@
+name: sonarqube
+
+on:
+  push: 
+    branches:
+        - master
+        
+env:
+  SONARQUBE_URL: "https://sonarqube.metrosystems.net"
+  SOLUTION: "example-solution"
+  VERTICAL: "example-vertical"
+  SERVICE: "example-service"
+
+jobs:
+  scanner:
+      name: SonarQube Trigger
+      runs-on: self-hosted
+      steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup sonarqube
+        uses: warchant/setup-sonar-scanner@v3
+      
+      - name: SonarQube Scan
+        run: sonar-scanner
+          -Dsonar.host.url=${{ env.SONARQUBE_URL }}
+          -Dsonar.login=${{ secrets.SQ_TOKEN }}
+          -Dsonar.projectKey=${{ env.SOLUTION }}.${{ env.VERTICAL }}.${{ env.SERVICE }}

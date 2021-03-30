@@ -1,0 +1,42 @@
+name: sonarqube-pr-check
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+    branches:
+      - master
+
+env:
+  SONARQUBE_URL: "https://sonarqube.metrosystems.net"
+  SOLUTION: "example-solution"
+  VERTICAL: "example-vertical"
+  SERVICE: "example-service"
+
+jobs:
+  sonarqube:
+    runs-on: self-hosted
+    steps:
+      - name: Setup sonarqube
+        uses: warchant/setup-sonar-scanner@v3
+
+      - name: 'Checkout repository on branch: ${{ github.REF }}'
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.HEAD_REF }}
+
+      - name: Retrieve entire repository history
+        run: |
+          git fetch --prune --unshallow
+
+      - name: Run an analysis of the PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: sonar-scanner
+          -Dsonar.host.url=${{ env.SONARQUBE_URL }}
+          -Dsonar.login=${{ secrets.SQ_TOKEN }}
+          -Dsonar.projectKey=${{ env.SOLUTION }}.${{ env.VERTICAL }}.${{ env.SERVICE }}
+          -Dsonar.pullrequest.key=${{ github.event.number }}
+          -Dsonar.pullrequest.branch=${{ github.HEAD_REF }}
+          -Dsonar.pullrequest.base=${{ github.BASE_REF }}
+          -Dsonar.pullrequest.github.repository=${{ github.repository }}
+          -Dsonar.scm.provider=git
