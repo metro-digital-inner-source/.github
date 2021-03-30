@@ -1,3 +1,46 @@
+#
+# SonarQube - Pull Request Decoration
+# 
+#
+# Prerequisites:
+# 1. Configure 'SONARQUBE_TOKEN' secret to be configured on the repository.
+#    How to generate secret: https://docs.sonarqube.org/8.6/user-guide/user-token/
+# 
+# 2. Set your project settings at SonarQube Project Settings > General Settings > Pull Request Decoration.
+#    From here, set your:
+#       Configuration name – METRO-GITHUB
+#       Repository identifier – The path of your repository URL.
+# 
+# 3. Set correct values for the following env variables: 
+#       SOLUTION
+#       VERTICAL
+#       SERVICE
+# 
+# Coverage reports:
+#   To include coverage report on the SonarQube analysis, 
+#     1. Uncomment the 'Generate coverprofile' step and generate there your coverage file(s).
+#     2. Add parameter to the sonar-scanner in the 'SonarQube Scan' step.
+#        The parameter name depends on the project language. 
+#        More info: https://docs.sonarqube.org/8.6/analysis/coverage/
+#        Examples:
+#           golang: -Dsonar.go.coverage.reportPaths=**/coverage.out
+#           python: -Dsonar.python.coverage.reportPaths=path/to/coverage.xml
+#           javascript: -Dsonar.javascript.lcov.reportPaths=./path/to/lcov.info
+# 
+# Sources Exclusion:
+#   Source files to be excluded from the analysis can be listed in another parameter.
+#   Paths are relative to the project base directory. The following wildcards can be used:
+#       * - Match zero or more characters
+#       ** - Match zero or more directories
+#       ? - Match a single character
+# 
+#       More info: https://docs.sonarqube.org/8.6/project-administration/narrowing-the-focus/
+#       Example: -Dsonar.exclusions="**/*_test.go,**/mock.go"
+#     
+# 
+# Other customizations: https://docs.sonarqube.org/8.6/analysis/analysis-parameters/
+#
+
 name: sonarqube-pr-check
 
 on:
@@ -7,7 +50,6 @@ on:
       - master
 
 env:
-  SONARQUBE_URL: "https://sonarqube.metrosystems.net"
   SOLUTION: "example-solution"
   VERTICAL: "example-vertical"
   SERVICE: "example-service"
@@ -16,8 +58,6 @@ jobs:
   sonarqube:
     runs-on: self-hosted
     steps:
-      - name: Setup sonarqube
-        uses: warchant/setup-sonar-scanner@v3
 
       - name: 'Checkout repository on branch: ${{ github.REF }}'
         uses: actions/checkout@v2
@@ -27,16 +67,29 @@ jobs:
       - name: Retrieve entire repository history
         run: |
           git fetch --prune --unshallow
+    
+      - uses: actions/setup-node@v2
+        with:
+            node-version: '12'
+            
+      - name: Setup sonarqube
+        uses: warchant/setup-sonar-scanner@v3
+
+    #   - name: Generate coverprofile
+    #     run: |
+    #         generate coverage report here
 
       - name: Run an analysis of the PR
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: sonar-scanner
-          -Dsonar.host.url=${{ env.SONARQUBE_URL }}
-          -Dsonar.login=${{ secrets.SQ_TOKEN }}
+          -Dsonar.host.url="https://sonarqube.metrosystems.net"
+          -Dsonar.login=${{ secrets.SONARQUBE_TOKEN }}
           -Dsonar.projectKey=${{ env.SOLUTION }}.${{ env.VERTICAL }}.${{ env.SERVICE }}
           -Dsonar.pullrequest.key=${{ github.event.number }}
           -Dsonar.pullrequest.branch=${{ github.HEAD_REF }}
           -Dsonar.pullrequest.base=${{ github.BASE_REF }}
           -Dsonar.pullrequest.github.repository=${{ github.repository }}
           -Dsonar.scm.provider=git
+        #   -Dsonar.exclusions="**/*_test.go,**/mock.go"
+        #   -Dsonar.go.coverage.reportPaths=**/coverage.out
