@@ -1,0 +1,104 @@
+#
+# Cloud Foundation 
+# Google Cloud Platform Terraform pipeline
+# 
+# This workflow runs Terraform code for several stages.
+#
+# Important: Ensure the used GCP service account keys are rotated regularly!
+#
+# Setup:
+#   * Create a service account that has all the required permissions to
+#     apply any change done by your Terraform code
+#
+#   * Create a service account key
+#     * Encode the key file using base64 (disable line wrapping)
+#     * Store it as a GitHub repository secret
+#
+#   * Recommended: Create key rotation for your service account keys
+#
+# The workflow assumes you are having multiple environments with different service accounts.
+# Each stage has a dedicated secret holding your service account key:
+#
+#     Env  | Secret name
+#     -----+---------------------------
+#     dev  | TERRAFORM_CREDENTIALS_DEV
+#     pp   | TERRAFORM_CREDENTIALS_PP
+#     prod | TERRAFORM_CREDENTIALS_PROD
+#
+# Amount of stages, names and secret names can be adjusted by modifying the jobs strategy matrix.
+#
+# Additionally the workflow will run Terraform plan for any push or pull request on any branch, but only
+# apply changes via Terraform apply on commits pushed to the master branch.
+# This can be adjusted by modifying the last step's conditions if needed.
+
+name: 'GCP deployment'
+
+on:
+  push:
+    # Remove this if you do not use the CF workflow for key rotation
+    paths-ignore:
+      - '.github/workflows/cf-gcp-key-rotation.yml'
+
+jobs:
+  terraform:
+    name: terraform
+    runs-on: ubuntu-latest
+
+    # Use the Bash shell regardless whether the GitHub Actions runner is
+    # ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ matrix.environment }}
+
+    strategy:
+      max-parallel: 1
+      matrix:
+        environment: [dev, pp, prod]
+        include:
+          - environment: dev
+            secret_name: TERRAFORM_CREDENTIALS_DEV
+          - environment: pp
+            secret_name: TERRAFORM_CREDENTIALS_PP
+          - environment: prod
+            secret_name: TERRAFORM_CREDENTIALS_PROD
+
+    steps:
+      # Checkout the repository to the GitHub Actions runner
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # Install the latest version of Terraform CLI and configure the Terraform CLI
+      # configuration file with a Terraform Cloud user API token
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+
+      - name: Setup GCP Credentials
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          service_account_key: ${{ secrets[matrix.terraform-key] }}
+          export_default_credentials: true     
+
+      # Fail pipeline if code is not formatted proper
+      - name: terraform fmt
+        id: fmt
+        run: terraform fmt -check
+
+      # Initialize a new or existing Terraform working directory by creating initial files
+      # loading any remote state, downloading modules, etc.
+      - name: terraform init
+        run: terraform init
+
+      # Checks that all Terraform configuration files adhere to a canonical format
+      - name: terraform validate
+        run: terraform validate
+
+      # Generates an execution plan for Terraform
+      - name: terraform plan
+        run: terraform plan -out=${{ github.sha }}.plan
+
+      # On push to master, build or change infrastructure according to Terraformit configuration files
+      - name: terraform apply
+        if: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
+        run: terraform apply -auto-approve "${{ github.sha }}.plan"
+ 
