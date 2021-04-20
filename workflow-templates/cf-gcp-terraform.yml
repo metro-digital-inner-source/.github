@@ -97,7 +97,7 @@ jobs:
       - name: terraform plan
         run: terraform plan -out=${{ github.sha }}.plan
 
-      # On push to master, build or change infrastructure according to Terraformit configuration files
+      # On push to master, build or change infrastructure according to Terraform configuration files
       - name: terraform apply
         if: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
         run: terraform apply -auto-approve "${{ github.sha }}.plan"
