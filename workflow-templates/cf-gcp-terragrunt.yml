@@ -1,0 +1,104 @@
+#
+# Cloud Foundation 
+# Google Cloud Platform terragrunt pipeline
+# 
+# This workflow runs terragrunt code for several stages.
+#
+# Important: Ensure the used GCP service account keys are rotated regularly!
+#
+# Setup:
+#   * Create a service account that has all the required permissions to
+#     apply any change done by your Terraform code
+#
+#   * Create a service account key
+#     * Encode the key file using base64 (disable line wrapping)
+#     * Store it as a GitHub repository secret
+#
+#   * Recommended: Create key rotation for your service account keys
+#
+# The workflow assumes you are having multiple environments with different service accounts.
+# Each stage has a dedicated secret holding your service account key:
+#
+#     Env  | Secret name
+#     -----+---------------------------
+#     dev  | TERRAFORM_CREDENTIALS_DEV
+#     pp   | TERRAFORM_CREDENTIALS_PP
+#     prod | TERRAFORM_CREDENTIALS_PROD
+#
+# Amount of stages, names and secret names can be adjusted by modifying the jobs strategy matrix.
+#
+# Additionally the workflow will run terragrunt plan for any push or pull request on any branch, but only
+# apply changes via terragrunt apply on commits pushed to the master branch.
+# This can be adjusted by modifying the last step's conditions if needed.
+
+name: 'GCP deployment'
+
+on:
+  push:
+    # Remove this if you do not use the CF workflow for key rotation
+    paths-ignore:
+      - '.github/workflows/cf-gcp-key-rotation.yml'
+
+jobs:
+  terraform:
+    name: terraform
+    runs-on: ubuntu-latest
+
+    # Use the Bash shell regardless whether the GitHub Actions runner is
+    # ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ matrix.environment }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [dev]
+        include:
+          - environment: dev
+            terraform-key: TERRAFORM_CREDENTIALS_DEV
+
+    steps:
+      # Checkout the repository to the GitHub Actions runner
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # Install the latest version of Terraform CLI and configure the Terraform CLI
+      # configuration file with a Terraform Cloud user API token
+      # Ensure the terraform wrapper is disabled, see also:
+      # https://github.com/gruntwork-io/terragrunt/issues/1202
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_wrapper: false
+
+      - name: Setup terragrunt
+        uses: metro-digital/cf-github-actions/terragrunt-setup@v1
+
+      - name: Setup GCP Credentials
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          service_account_key: ${{ secrets[matrix.terraform-key] }}
+          export_default_credentials: true
+
+      # Fail pipeline if code is not formatted proper
+      - name: terragrunt hclfmt
+        id: hclfmt
+        run: terragrunt hclfmt --terragrunt-check
+
+      # Checks that all configuration files are valid
+      - name: terragrunt validate
+        id: validate
+        run: terragrunt run-all validate
+
+      # Generates an execution plan for terragrunt
+      - name: terragrunt plan
+        id: plan
+        run: terragrunt run-all plan -out=${{ github.sha }}.plan
+
+      # On push to master, build or change infrastructure according to terragrunt configuration files
+      - name: terragrunt apply
+        id: apply
+        if: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
+        run: terragrunt run-all apply --terragrunt-non-interactive -auto-approve "${{ github.sha }}.plan"
