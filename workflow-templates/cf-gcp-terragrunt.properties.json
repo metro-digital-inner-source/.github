@@ -1,0 +1,5 @@
+{
+    "name": "Metro Digital: Cloud Foundation terragrunt workflow",
+    "description": "Runs terragrunt against GCP infrastructure",
+    "iconName": "METRONOM-logo"
+} 
