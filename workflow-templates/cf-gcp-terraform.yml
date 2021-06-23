@@ -76,7 +76,7 @@ jobs:
       - name: Setup GCP Credentials
         uses: google-github-actions/setup-gcloud@master
         with:
-          service_account_key: ${{ secrets[matrix.terraform-key] }}
+          service_account_key: ${{ secrets[matrix.secret_name] }}
           export_default_credentials: true     
 
       # Fail pipeline if code is not formatted proper
