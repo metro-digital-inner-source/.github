@@ -1,0 +1,49 @@
+name: On Feature Request isssue
+on:
+  issues:
+    types: [opened]
+jobs:
+  issue:
+    runs-on: ubuntu-latest
+    if: |
+      contains(github.event.issue.labels.*.name, 'enhancement')
+    steps:
+    - name: Comment adding member failed
+      uses: octokit/request-action@v2.x
+      with:
+        route: POST /repos/:repo/issues/:issue_number/comments
+        repo: ${{ github.repository }}
+        issue_number: ${{ github.event.issue.number }}
+        body: |
+          ':robot: *beep*
+
+
+          Thank you for feedback! I have informed [2tier](https://github.com/orgs/${{github.event.organization.login}}/teams/product_2tier) they will take a look into the issue.
+
+
+          Please check another Requests on [2tier Feature Request Project](https://github.com/orgs/metro-digital-inner-source/projects/8). Also use reaction ":+1:" in issues to vote on most needed once.
+          '
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+    - name: Send Teams notification
+      run: |
+        cat <<EOM | curl -X POST -d @- ${{ secrets.MS_TEAMS_GITHUB_FEEDBACK_WEBHOOK }}
+            {
+              "title": "New Feature Request issue #${{github.event.issue.number}}",
+              "summary": "New Feature Request issue",
+              "sections": [
+                {
+                  "activityTitle": "[Issue create on ${{ github.repository }}](${{ github.event.issue.html_url }})",
+                  "activitySubtitle": "Event triggered by ${{ github.actor }}",
+                  "activityText": "Check if the issue contains enough informations"
+                }
+              ]
+            }
+        EOM
+    - name: Assign issue to project
+      uses: srggrs/assign-one-project-github-action@1.2.1
+      with:
+        project: 'https://github.com/orgs/metro-digital-inner-source/projects/8'
+        column_name: 'Backlog'
+      env:
+        MY_GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
