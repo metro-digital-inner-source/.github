@@ -49,6 +49,8 @@ jobs:
     defaults:
       run:
         shell: bash
+        # The working-directory is only needed if you have your terraform code in different folders per environment.
+        # Comment or adjust it according to your folder structure.
         working-directory: ${{ matrix.environment }}
 
     strategy:
