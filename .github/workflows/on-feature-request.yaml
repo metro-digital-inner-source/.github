@@ -18,10 +18,10 @@ jobs:
           ':robot: *beep*
 
 
-          Thank you for feedback! I have informed [2tier](https://github.com/orgs/${{github.event.organization.login}}/teams/product_2tier) they will take a look into the issue.
+          Thank you for feedback! I will inform the [2tier](https://github.com/orgs/${{github.event.organization.login}}/teams/product_2tier) team of your feature request.
 
 
-          Please check another Requests on [2tier Feature Request Project](https://github.com/orgs/metro-digital-inner-source/projects/8). Also use reaction ":+1:" in issues to vote on most needed once.
+          Now that you are here, please check out the [other feature requests](https://github.com/orgs/metro-digital-inner-source/projects/8) and vote ":+1:" for the ones which you would like to see implemented.
           '
       env:
         GITHUB_TOKEN: ${{ github.token }}
@@ -29,15 +29,41 @@ jobs:
       run: |
         cat <<EOM | curl -X POST -d @- ${{ secrets.MS_TEAMS_GITHUB_FEEDBACK_WEBHOOK }}
             {
-              "title": "New Feature Request issue #${{github.event.issue.number}}",
-              "summary": "New Feature Request issue",
+              "title": "New Feature Request to vote",
+              "summary": "New Feature Request to vote",
+              "themeColor": "0076D7",
               "sections": [
                 {
-                  "activityTitle": "[Issue create on ${{ github.repository }}](${{ github.event.issue.html_url }})",
-                  "activitySubtitle": "Event triggered by ${{ github.actor }}",
-                  "activityText": "Check if the issue contains enough informations"
+                  "activityTitle": "To vote use \"👍\" reaction in the first issue comment for the ones which you would to see implemented.",
+                  "activityImage": "https://github.com/Patrysz.png?size=60",
+                  "facts": [{
+                      "name": "Title",
+                      "value": "${{ github.event.issue.title }}"
+                  }, {
+                      "name": "Author",
+                      "value": "${{ github.actor }}"
+                  }, {
+                      "name": "Repository",
+                      "value": "${{ github.event.repository.name }}"
+                  }],
                 }
-              ]
+              ],
+              "potentialAction": [{
+                "@type": "OpenUri",
+                "name": "Feature Request",
+                "targets": [{
+                    "os": "default",
+                    "uri": "${{ github.event.issue.html_url }}"
+                }]
+              },
+              {
+                "@type": "OpenUri",
+                "name": "Board with other Feature Requests",
+                "targets": [{
+                    "os": "default",
+                    "uri": "https://github.com/orgs/metro-digital-inner-source/projects/8"
+                }]
+              }]
             }
         EOM
     - name: Assign issue to project
