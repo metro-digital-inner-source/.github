@@ -74,12 +74,15 @@ jobs:
             
       - name: Setup sonarqube
         uses: warchant/setup-sonar-scanner@v3
+        with:
+          version: '4.6.2.2472'
 
     #   - name: Generate coverprofile
     #     run: |
     #         generate coverage report here
 
       - name: Run an analysis of the PR
+        if: github.actor != 'dependabot[bot]'
         env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: sonar-scanner
