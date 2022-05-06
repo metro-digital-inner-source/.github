@@ -4,28 +4,19 @@
 # 
 # This workflow runs Terraform code for several stages.
 #
-# Important: Ensure the used GCP service account keys are rotated regularly!
+# Important: Ensure you have configured workload identity federation for github access
 #
 # Setup:
-#   * Create a service account that has all the required permissions to
-#     apply any change done by your Terraform code
-#
-#   * Create a service account key
-#     * Encode the key file using base64 (disable line wrapping)
-#     * Store it as a GitHub repository secret
-#
-#   * Recommended: Create key rotation for your service account keys
+#   * Create and configure 'Workload identity federation' in your project.
+#     Please feel free to use Cloud Foundation terraform-google-cf-projectcfg module
+#     to create workload identity pool and provider for your GCP project in a convinient and simplified way
+#     https://registry.terraform.io/modules/metro-digital/cf-projectcfg/google/latest
+#     Check 'Inputs' table about service_accounts in a README.md file for details
 #
 # The workflow assumes you are having multiple environments with different service accounts.
-# Each stage has a dedicated secret holding your service account key:
+# Each stage has a dedicated service account and gcp project number.
 #
-#     Env  | Secret name
-#     -----+---------------------------
-#     dev  | TERRAFORM_CREDENTIALS_DEV
-#     pp   | TERRAFORM_CREDENTIALS_PP
-#     prod | TERRAFORM_CREDENTIALS_PROD
-#
-# Amount of stages, names and secret names can be adjusted by modifying the jobs strategy matrix.
+# Amount of stages and names can be adjusted by modifying the jobs strategy matrix.
 #
 # Additionally the workflow will run Terraform plan for any push or pull request on any branch, but only
 # apply changes via Terraform apply on commits pushed to the master branch.
@@ -35,9 +26,6 @@ name: 'GCP deployment'
 
 on:
   push:
-    # Remove this if you do not use the CF workflow for key rotation
-    paths-ignore:
-      - '.github/workflows/cf-gcp-key-rotation.yml'
 
 jobs:
   terraform:
@@ -57,11 +45,18 @@ jobs:
         environment: [dev, pp, prod]
         include:
           - environment: dev
-            secret_name: TERRAFORM_CREDENTIALS_DEV
+            project_number: 123456789012 #your dev project number
+            service_account: your_dev_service_account@domain.com #change to your dev project SA being used to run terraform code
           - environment: pp
-            secret_name: TERRAFORM_CREDENTIALS_PP
+            project_number: 123456789012 #your pp project number
+            service_account: your_dev_service_account@domain.com #change to your pp project SA being used to run terraform code
           - environment: prod
-            secret_name: TERRAFORM_CREDENTIALS_PROD
+            project_number: 123456789012 #your prod project number
+            service_account: your_dev_service_account@domain.com #change to your prod project SA being used to run terraform code
+
+    permissions:
+      contents: 'read'
+      id-token: 'write'
 
     steps:
       # Checkout the repository to the GitHub Actions runner
@@ -73,11 +68,15 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v1
 
-      - name: Setup GCP Credentials
-        uses: google-github-actions/setup-gcloud@master
+      # In next step in case you're using CF terraform-google-cf-projectcfg module to configure workload identity federation change 123456789
+      # to your actual project's number. As for the service account - change it accordingly to a service account you use to run terraform code
+      # Note: if you use CF terraform-google-cf-projectcfg module and it's bootstrap script,
+      # your SA will look like 'terraform-iac-pipeline@{gcp_project_id}.iam.gserviceaccount.com'
+      - name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v0'
         with:
-          service_account_key: ${{ secrets[matrix.secret_name] }}
-          export_default_credentials: true     
+          workload_identity_provider: 'projects/${{ matrix.project_number }}/locations/global/workloadIdentityPools/github-actions/providers/github'
+          service_account: '${{ matrix.service_account }}'
 
       # Fail pipeline if code is not formatted proper
       - name: terraform fmt
