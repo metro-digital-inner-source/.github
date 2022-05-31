@@ -1,5 +1,0 @@
-{
-    "name": "Metro Digital: Cloud Foundation GCP key rotations",
-    "description": "Rotates Google Cloud Platform Service Account keys",
-    "iconName": "METRONOM-logo"
-}
