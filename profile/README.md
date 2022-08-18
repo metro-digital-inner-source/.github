@@ -1,1 +1,1 @@
-![METRO.digital logo](./images/METRO-DIGITAL-LOGO-light-mode.png)
+![METRO.digital logo](./profile/images/METRO-DIGITAL-LOGO-light-mode.png)
