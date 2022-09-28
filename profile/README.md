@@ -1,7 +1,7 @@
 ![METRO.digital logo](./profile/images/METRO-DIGITAL-LOGO-light-mode.png#gh-light-mode-only)
 ![METRO.digital logo](./profile/images/METRO-DIGITAL-LOGO-dark-mode.png#gh-dark-mode-only)
 
-## You are not logged-in into this organization!
+## You are not member of this organization!
 
 If you want to work in this GitHub organization, please try to get invited.  
 See more details [here](https://confluence.metrosystems.net/x/Ji1CGg).  
