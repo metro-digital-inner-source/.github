@@ -4,7 +4,7 @@
 #
 # Prerequisites:
 # 1. Configure 'SONARQUBE_TOKEN' secret to be configured on the repository.
-#    How to generate secret: https://docs.sonarqube.org/8.6/user-guide/user-token/
+#    How to generate secret: https://docs.sonarqube.org/latest/user-guide/user-token/
 # 
 # 2. Set correct values for the following env variables: 
 #       SOLUTION
@@ -16,7 +16,7 @@
 #     1. Uncomment the 'Generate coverprofile' step and generate there your coverage file(s).
 #     2. Add parameter to the sonar-scanner in the 'SonarQube Scan' step.
 #        The parameter name depends on the project language. 
-#        More info: https://docs.sonarqube.org/8.6/analysis/coverage/
+#        More info: https://docs.sonarqube.org/latest/analysis/coverage/
 #        Examples:
 #           golang: -Dsonar.go.coverage.reportPaths=**/coverage.out
 #           python: -Dsonar.python.coverage.reportPaths=path/to/coverage.xml
@@ -29,11 +29,11 @@
 #       ** - Match zero or more directories
 #       ? - Match a single character
 # 
-#       More info: https://docs.sonarqube.org/8.6/project-administration/narrowing-the-focus/
+#       More info: https://docs.sonarqube.org/latest/project-administration/narrowing-the-focus/
 #       Example: -Dsonar.exclusions="**/*_test.go,**/mock.go"
 #     
 # 
-# Other customizations: https://docs.sonarqube.org/8.6/analysis/analysis-parameters/
+# Other customizations: https://docs.sonarqube.org/latest/analysis/analysis-parameters/
 #
 
 
@@ -55,16 +55,16 @@ jobs:
       runs-on: self-hosted
       steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
     
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v3
         with:
-            node-version: '12'
+            node-version: '16'
 
       - name: Setup sonarqube
-        uses: warchant/setup-sonar-scanner@v3
+        uses: warchant/setup-sonar-scanner@v4
         with:
-          version: '4.6.2.2472'
+          version: '4.8.0.2856'
 
     #   - name: Generate coverprofile
     #     run: |
