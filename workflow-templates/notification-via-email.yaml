@@ -12,7 +12,7 @@ jobs:
   send-notification:
     runs-on: [self-hosted, Linux, metro-network]
     steps:
-      - name: Send notification email on workflow failure
+      - name: Send notification email on workflow run
         # Only send a notification if the workflow run failed
         # if: ${{ github.event.workflow_run.conclusion == 'failure' }}
         uses: wadeww/send-email-action@master
