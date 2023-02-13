@@ -3,9 +3,7 @@
     "description": "Send notifications for WaaS via MS Teams",
     "iconName": "METRO-DIGITAL-logo",
     "categories": [
-        "WaaS",
-        "MS Teams",
-        "Notification"
+        "utilities"
     ],
     "filePatterns": [
         "waas.yaml$"
