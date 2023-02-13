@@ -19,10 +19,10 @@ jobs:
         with:
           server_address: ${{ secrets.MD_EMAIL_SERVER_NAME }}
           port: ${{ secrets.MD_EMAIL_SERVER_PORT }}
-          subject: GitHub WaaS workflow run failed
-          # Customize the message to your liking
+          # Customize subject and body to your liking
+          subject: GitHub WaaS workflow run completed
           body: |
-            WaaS workflow failed for ${{ github.repository }}:
+            WaaS workflow run for ${{ github.repository }} completed with status ${{ github.event.workflow_run.conclusion }}.
             Commit message: ${{ github.event.workflow_run.head_commit.message }}
             Workflow run: https://github.com/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}
           to: <recipient01,recipient02>
