@@ -1,0 +1,11 @@
+{
+    "name": "Metro Digital: Send notifications via Email",
+    "description": "Send notifications for WaaS via (METRO) Email server",
+    "iconName": "METRO-DIGITAL-logo",
+    "categories": [
+        "utilities"
+    ],
+    "filePatterns": [
+        "waas.yaml$"
+    ]
+}
