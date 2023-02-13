@@ -1,7 +1,7 @@
 {
     "name": "Metro Digital: Maven Publish",
     "description": "Builds and publishes Java packages using maven",
-    "iconName": "METRONOM-logo",
+    "iconName": "METRO-DIGITAL-logo",
     "categories": [
         "Java"
     ],
