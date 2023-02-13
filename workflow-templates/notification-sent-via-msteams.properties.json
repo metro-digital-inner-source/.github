@@ -1,0 +1,13 @@
+{
+    "name": "Metro Digital: Send notifications via MS Teams",
+    "description": "Send notifications for WaaS via MS Teams",
+    "iconName": "METRO-DIGITAL-logo",
+    "categories": [
+        "WaaS",
+        "MS Teams",
+        "Notification"
+    ],
+    "filePatterns": [
+        "waas.yaml$"
+    ]
+}
