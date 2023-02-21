@@ -39,7 +39,7 @@ jobs:
       id: jenkins_url
       if: contains(env.JENKINS_URL, 'jenkins.example.com')
       run: |
-        echo "::set-output name=status::invalid"
+        echo "status=invalid" >> $GITHUB_OUTPUT
     - name: create issue for missing Jenkins URL
       if: contains(steps.jenkins_url.outputs.status, 'invalid')
       uses: octokit/request-action@v2.x
@@ -70,7 +70,7 @@ jobs:
       id: jenkins_job
       if: contains(env.JENKINS_JOB, 'example-job')
       run: |
-        echo "::set-output name=status::invalid"
+        echo "status=invalid" >> $GITHUB_OUTPUT
     - name: create issue for missing Jenkins URL
       if: contains(steps.jenkins_job.outputs.status, 'invalid')
       uses: octokit/request-action@v2.x
@@ -102,7 +102,7 @@ jobs:
       id: jenkins
       if: env.auth_token == ''
       run: |
-        echo "::set-output name=auth_token::invalid"
+        echo "auth_token=invalid" >> $GITHUB_OUTPUT
       env:
         auth_token: ${{ secrets.JENKINS_AUTH_TOKEN }}
     - name: create issue for missing Jenkins auth token
