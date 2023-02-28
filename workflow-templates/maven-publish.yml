@@ -43,7 +43,7 @@ jobs:
       id: smtpserver
       if: contains(env.SMTP_SERVER_ADDRESS, 'example')
       run: |
-        echo "::set-output name=status::invalid"
+        echo "status=invalid" >> $GITHUB_OUTPUT
     - name: create issue for missing smtp server address
       if: contains(steps.smtpserver.outputs.status, 'invalid')
       uses: octokit/request-action@v2.x
@@ -75,7 +75,7 @@ jobs:
       id: artifactstore
       if: env.username == '' || env.password == ''
       run: |
-        echo "::set-output name=credentials::invalid"
+        echo "credentials=invalid" >> $GITHUB_OUTPUT
       env:
         username: '${{ secrets.ARTIFACT_STORE_CLIENT_USERNAME }}'
         password: '${{ secrets.ARTIFACT_STORE_CLIENT_PASSWORD }}'
@@ -120,7 +120,7 @@ jobs:
         labels: '[ "bug" ]'
         body: |
           The repository ${{ github.repository }} is configured to use maven,
-          but the `mvn-settings.xml` file is missing. This file is needed to 
+          but the `mvn-settings.xml` file is missing. This file is needed to
           authenticate with the artifact store (e.g. artifactory or nexus).
 
           Please create a `mvn-settings.xml` file which contains (and don't contain secrets)
@@ -135,7 +135,7 @@ jobs:
 
           ```
 
-          Please be aware, that the `<id>`s have to match the ones you use 
+          Please be aware, that the `<id>`s have to match the ones you use
           in `pom.xml` in the section `<distributionManagement>`.
 
           You can take an [example from here](https://github.com/metro-digital-inner-source/.github/blob/master/documentation/wf-maven-publish/mvn-settings.xml)
@@ -147,9 +147,9 @@ jobs:
         [ -s "./mvn-settings.xml" ] && {
           secrets=$(cat mvn-settings.xml | grep '<password>' | grep -v -e '<password>${.*}</password>')
           if [ -z "$secrets"]; then
-            echo "::set-output name=contains::false"
+            echo "contains=false" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=contains::true"
+            echo "contains=true" >> $GITHUB_OUTPUT
           fi
         } || :
     - name: create issue if mvn-settings contains secrets
@@ -161,8 +161,8 @@ jobs:
         title: File mvn-setting.xml contains secrets
         labels: '[ "bug" ]'
         body: |
-          The file `mvn-settings.xml` contains username or passwords. 
-          These should be stored as GitHub secrets of the repository. 
+          The file `mvn-settings.xml` contains username or passwords.
+          These should be stored as GitHub secrets of the repository.
 
           Please [create the respository secrets](https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets#creating-encrypted-secrets-for-a-repository),
           `ARTIFACT_STORE_CLIENT_USERNAME` and `ARTIFACT_STORE_CLIENT_PASSWORD` with a valid
@@ -182,7 +182,7 @@ jobs:
 
           ```
 
-          Please be aware, that the `<id>`s have to match the ones you use 
+          Please be aware, that the `<id>`s have to match the ones you use
           in `pom.xml` in the section `<distributionManagement>`.
 
           You can take an [example from here](https://github.com/metro-digital-inner-source/.github/blob/master/documentation/wf-maven-publish/mvn-settings.xml)
@@ -192,16 +192,16 @@ jobs:
       id: consolidate-mvn-checks
       run: |
         if [ "${{steps.mvn-settings-exists.outputs.files_exists}}" == "false" ] || [ "${{steps.check-for-secrets.outputs.contains}}" == "true" ]; then
-          echo "::set-output name=status::invalid"
+          echo "status=invalid" >> $GITHUB_OUTPUT
         fi
   finalize-check:
     runs-on: ubuntu-latest
     needs: [check-for-smtp-address, check-for-artifactstore-credentials, check-mvn-settings]
     steps:
     - name: exit workflow
-      if: > 
-        needs.check-for-smtp-address.outputs.status == 'invalid' 
-          || needs.check-for-artifactstore-credentials.outputs.credentials == 'invalid' 
+      if: >
+        needs.check-for-smtp-address.outputs.status == 'invalid'
+          || needs.check-for-artifactstore-credentials.outputs.credentials == 'invalid'
           || needs.check-mvn-settings.outputs.status == 'invalid'
       run: |
         echo "::error::Please resolve the issues labeled as bug for ${{ github.repository }}"
@@ -251,7 +251,7 @@ jobs:
       run: |
         [ -s "./.teamschannel" ] && {
           teams_channel=$(cat .teamschannel)
-          echo "::set-output name=webhook-url::$teams_channel"
+          echo "webhook-url=$teams_channel" >> $GITHUB_OUTPUT
         } || :
     - name: Send message to ms teams
       if: steps.teamschannel.outputs.webhook-url != ''
@@ -272,7 +272,7 @@ jobs:
             watchers="${email},${watchers}"
           done <<< $(cat .watchers)
           watchers=${watchers%?}
-          echo "::set-output name=email-ids::$watchers"
+          echo "email-ids=$watchers" >> $GITHUB_OUTPUT
         } || :
     - name: Send a notification mail
       if: steps.watchers.outputs.email-ids != ''
