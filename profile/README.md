@@ -1,6 +1,12 @@
 ![METRO.digital logo](./profile/images/METRO-DIGITAL-LOGO-light-mode.png#gh-light-mode-only)
 ![METRO.digital logo](./profile/images/METRO-DIGITAL-LOGO-dark-mode.png#gh-dark-mode-only)
 
+## Malfunction on 2023-12-31
+
+If you lost your access due to this problem, you should already have a new
+invitation to this organization. Please notice the banner at the top of
+this page, in case you have an open invitation.
+
 ## You are not member of this organization!
 
 If you want to work in this GitHub organization, please try to get invited.  
