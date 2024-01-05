@@ -15,7 +15,7 @@ jobs:
       - name: Send notification via Microsoft Teams
         # Only send a notification if the workflow run failed
         # if: ${{ github.event.workflow_run.conclusion == 'failure' }}
-        uses: metro-digital/ms-teams-notification-action@v1.0.0
+        uses: metro-digital/ms-teams-notification-action@v1.x
         with:
           # The webhook URL of the Microsoft Teams channel
           # You can create a webhook URL by following the instructions here: 
