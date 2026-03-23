@@ -9,21 +9,24 @@
 #    - if you onboard from SonarQube via GitHub integration, the project key will
 #      be automatically generated in the format of {{GITHUB_ORG}}_{{REPO_NAME}}_{{UUID}}
 #    - if you generate via local project creation, use at least {{GITHUB_ORG}}_{{REPO_NAME}}
-# 2. Navigate to https://{{SONAR_HOST_URL}}/tutorials?id={{PROJECT_KEY}}&selectedTutorial=github-actions
+#    - you can also update the key in SonarQube and remove the {{UUID}} suffix
+# 2. In SonarQube Navigate and check the tutorials for GitHub Actions at
+#    https://{{SONAR_HOST_URL}}/tutorials?id={{PROJECT_KEY}}&selectedTutorial=github-actions
 #    and follow the instructions that best fit your project, Do not overwrite this file,
-#    but rather add extra steps as needed.
+#    instead, add extra steps as needed.
 #
 # Notes:
 #   - For GitHub PR decoration, ensure DevOps Platform Integration is configured in SonarQube
 #     and the project is linked to this GitHub repository.
 #     Go to Project Settings > General Settings > DevOps Platform Integration
-#     and provide the required configuration values.
+#     and make sure the required configuration values are set.
 #   - If you do not want SonarQube to run on all PR events, use a label-based condition
 #     (for example, only run when the PR has the `sonarqube-scan` label).
-#     by using actions/labeler
-# Contact:  Channel: SonarQube @ Deployment Tools Teams
+#     You can implement this by using the actions/labeler workflow.
+#
+# Contact:  Channel: SonarQube @ Deployment Tools in Microsoft Teams
 
-name: Sonarqube Scan
+name: SonarQube Scan
 
 on:
   push:
@@ -36,14 +39,15 @@ on:
 
 jobs:
   sonarqube:
-    name: Sonarqube scan
+    name: SonarQube scan
     runs-on:
       - self-hosted
       - Linux
       - metro-network
     env:
       SONAR_HOST_URL: https://sonarqube.metrosystems.net
-      SONAR_PROJECT_KEY: ${{ github.repository_owner }}_${{ github.event.repository.name }} # __REPLACE_WITH_SONAR_PROJECT_KEY__
+      # SONAR_PROJECT_KEY: ${{ github.repository_owner }}_${{ github.event.repository.name }}
+      SONAR_PROJECT_KEY: __REPLACE_WITH_SONAR_PROJECT_KEY__
       SONAR_PROJECT_NAME: ${{ github.event.repository.name }}
     steps:
       - uses: actions/checkout@v4
