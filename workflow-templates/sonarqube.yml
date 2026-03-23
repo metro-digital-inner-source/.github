@@ -1,79 +1,69 @@
 #
 # SonarQube Static Code Analysis
-# 
+#
+# Minimal SonarQube workflow template for static code analysis.
+# Customize as needed for your project requirements.
 #
 # Prerequisites:
-# 1. Configure 'SONARQUBE_TOKEN' secret to be configured on the repository.
-#    How to generate secret: https://docs.sonarqube.org/latest/user-guide/user-token/
-# 
-# 2. Set correct values for the following env variables: 
-#       SOLUTION
-#       VERTICAL
-#       SERVICE
+# 1. Create a SonarQube project and obtain the {{PROJECT_KEY}}.
+#    - if you onboard from SonarQube via GitHub integration, the project key will
+#      be automatically generated in the format of {{GITHUB_ORG}}_{{REPO_NAME}}_{{UUID}}
+#    - if you generate via local project creation, use at least {{GITHUB_ORG}}_{{REPO_NAME}}
+# 2. Navigate to https://{{SONAR_HOST_URL}}/tutorials?id={{PROJECT_KEY}}&selectedTutorial=github-actions
+#    and follow the instructions that best fit your project, Do not overwrite this file,
+#    but rather add extra steps as needed.
 #
-# Coverage reports:
-#   To include coverage report on the SonarQube analysis, 
-#     1. Uncomment the 'Generate coverprofile' step and generate there your coverage file(s).
-#     2. Add parameter to the sonar-scanner in the 'SonarQube Scan' step.
-#        The parameter name depends on the project language. 
-#        More info: https://docs.sonarqube.org/latest/analysis/coverage/
-#        Examples:
-#           golang: -Dsonar.go.coverage.reportPaths=**/coverage.out
-#           python: -Dsonar.python.coverage.reportPaths=path/to/coverage.xml
-#           javascript: -Dsonar.javascript.lcov.reportPaths=./path/to/lcov.info
-# 
-# Sources Exclusion:
-#   Source files to be excluded from the analysis can be listed in another parameter.
-#   Paths are relative to the project base directory. The following wildcards can be used:
-#       * - Match zero or more characters
-#       ** - Match zero or more directories
-#       ? - Match a single character
-# 
-#       More info: https://docs.sonarqube.org/latest/project-administration/narrowing-the-focus/
-#       Example: -Dsonar.exclusions="**/*_test.go,**/mock.go"
-#     
-# 
-# Other customizations: https://docs.sonarqube.org/latest/analysis/analysis-parameters/
-#
+# Notes:
+#   - For GitHub PR decoration, ensure DevOps Platform Integration is configured in SonarQube
+#     and the project is linked to this GitHub repository.
+#     Go to Project Settings > General Settings > DevOps Platform Integration
+#     and provide the required configuration values.
+#   - If you do not want SonarQube to run on all PR events, use a label-based condition
+#     (for example, only run when the PR has the `sonarqube-scan` label).
+#     by using actions/labeler
+# Contact:  Channel: SonarQube @ Deployment Tools Teams
 
-
-name: sonarqube
+name: Sonarqube Scan
 
 on:
-  push: 
+  push:
     branches:
-        - master
-        
-env:
-  SOLUTION: "example-solution"
-  VERTICAL: "example-vertical"
-  SERVICE: "example-service"
+      - master
+    paths-ignore:
+      - .github/**
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
-  scanner:
-      name: SonarQube Trigger
-      runs-on: self-hosted
-      steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-    
-      - uses: actions/setup-node@v3
+  sonarqube:
+    name: Sonarqube scan
+    runs-on:
+      - self-hosted
+      - Linux
+      - metro-network
+    env:
+      SONAR_HOST_URL: https://sonarqube.metrosystems.net
+      SONAR_PROJECT_KEY: ${{ github.repository_owner }}_${{ github.event.repository.name }} # __REPLACE_WITH_SONAR_PROJECT_KEY__
+      SONAR_PROJECT_NAME: ${{ github.event.repository.name }}
+    steps:
+      - uses: actions/checkout@v4
         with:
-            node-version: '16'
-
-      - name: Setup sonarqube
-        uses: warchant/setup-sonar-scanner@v4
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+      - uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          version: '4.8.0.2856'
-
-    #   - name: Generate coverprofile
-    #     run: |
-    #         generate coverage report here
-
-      - name: SonarQube Scan
-        run: sonar-scanner
-          -Dsonar.host.url="https://sonarqube.metrosystems.net"
-          -Dsonar.login=${{ secrets.SONARQUBE_TOKEN }}
-          -Dsonar.projectKey=${{ env.SOLUTION }}.${{ env.VERTICAL }}.${{ env.SERVICE }}
-        #   -Dsonar.exclusions="**/*_test.go,**/mock.go"
-        #   -Dsonar.go.coverage.reportPaths=**/coverage.out
+          args: >
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }}
+            -Dsonar.projectName=${{ env.SONAR_PROJECT_NAME }}
+      # If you wish to fail your job when the Quality Gate is red, uncomment the
+      # following lines. This would typically be used to fail a deployment.
+      # We do not recommend to use this in a pull request. Prefer using pull request
+      # decoration instead.
+      # - uses: SonarSource/sonarqube-quality-gate-action@v1
+      #   if: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
+      #   env:
+      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      #   timeout-minutes: 5
+      #   with:
+      #     pollingTimeoutSec: 600
