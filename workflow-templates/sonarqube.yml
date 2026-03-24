@@ -44,7 +44,7 @@ jobs:
     # Dependabot PRs can be blocked from merging by this check.
     # Move the condition to each step or use PR labels instead
     # to skip the job cleanly for Dependabot-originated PRs.
-    if: github.actor != 'dependabot[bot]'
+    if: github.actor != 'dependabot[bot]' && secrets.SONAR_TOKEN != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork != true)
     name: SonarQube scan
     runs-on:
       - self-hosted
