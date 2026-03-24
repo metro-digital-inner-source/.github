@@ -39,6 +39,12 @@ on:
 
 jobs:
   sonarqube:
+    # Skip SonarQube scans for Dependabot PRs as it does not have SONAR_TOKEN access.
+    # If this workflow is required in branch protection settings,
+    # Dependabot PRs can be blocked from merging by this check.
+    # Move the condition to each step or use PR labels instead
+    # to skip the job cleanly for Dependabot-originated PRs.
+    if: github.actor != 'dependabot[bot]'
     name: SonarQube scan
     runs-on:
       - self-hosted
