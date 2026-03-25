@@ -73,7 +73,7 @@ jobs:
           # has access to all projects with key pattern
           # '^metro-digital-inner-source_.*'
           # update project key in SonarQube or
-          # or overwrite with different token in github secrets if needed
+          # overwrite with different token in github secrets if needed
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
