@@ -64,10 +64,10 @@ jobs:
       SONAR_PROJECT_KEY: __REPLACE_WITH_SONAR_PROJECT_KEY__
       SONAR_PROJECT_NAME: ${{ github.event.repository.name }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
-      - uses: SonarSource/sonarqube-scan-action@v6
+      - uses: SonarSource/sonarqube-scan-action@v7
         env:
           # global SONAR_TOKEN for production SonarQube instance,
           # has access to all projects with key pattern
