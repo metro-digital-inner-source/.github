@@ -14,7 +14,7 @@
 #    https://{{ SONAR_HOST_URL }}/tutorials?id={{ SONAR_PROJECT_KEY }}&selectedTutorial=github-actions
 #    and follow the instructions that best fit your project, Do not overwrite this file,
 #    instead, add extra steps as needed.
-# 3  SONAR_HOST_URL is defined as organization-level variable and,
+# 3. SONAR_HOST_URL is defined as organization-level variable and,
 #    resolves to the prod enterprise SonarQube instance URL,
 #    update if you are using a different SonarQube instance
 # 4. There is an organization-level SONAR_TOKEN secret in GitHub, with scan access to all
