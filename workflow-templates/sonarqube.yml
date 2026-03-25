@@ -5,15 +5,21 @@
 # Customize as needed for your project requirements.
 #
 # Prerequisites:
-# 1. Create a SonarQube project and obtain the {{PROJECT_KEY}}.
+# 1. Create a SonarQube project and obtain the {{ SONAR_PROJECT_KEY }}.
 #    - if you onboard from SonarQube via GitHub integration, the project key will
 #      be automatically generated in the format of {{GITHUB_ORG}}_{{REPO_NAME}}_{{UUID}}
 #    - if you generate via local project creation, use at least {{GITHUB_ORG}}_{{REPO_NAME}}
 #    - you can also update the key in SonarQube and remove the {{UUID}} suffix
 # 2. In SonarQube Navigate and check the tutorials for GitHub Actions at
-#    https://{{SONAR_HOST_URL}}/tutorials?id={{PROJECT_KEY}}&selectedTutorial=github-actions
+#    https://{{ SONAR_HOST_URL }}/tutorials?id={{ SONAR_PROJECT_KEY }}&selectedTutorial=github-actions
 #    and follow the instructions that best fit your project, Do not overwrite this file,
 #    instead, add extra steps as needed.
+# 3  SONAR_HOST_URL is defined as organization-level variable and,
+#    resolves to the prod enterprise SonarQube instance URL,
+#    update if you are using a different SonarQube instance
+# 4. There is an organization-level SONAR_TOKEN secret in GitHub, with scan access to all
+#    SonarQube projects with the key pattern '^metro-digital-inner-source_.*'.
+#    you can overwrite the token by adding a new token to the repository secrets
 #
 # Notes:
 #   - For GitHub PR decoration, ensure DevOps Platform Integration is configured in SonarQube
@@ -34,6 +40,8 @@ on:
       - master
     paths-ignore:
       - .github/**
+      - .gitignore
+      - "**.md"
   pull_request:
     types: [opened, synchronize, reopened]
 
@@ -51,7 +59,7 @@ jobs:
       - Linux
       - metro-network
     env:
-      SONAR_HOST_URL: https://sonarqube.metrosystems.net
+      SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
       # SONAR_PROJECT_KEY: ${{ github.repository_owner }}_${{ github.event.repository.name }}
       SONAR_PROJECT_KEY: __REPLACE_WITH_SONAR_PROJECT_KEY__
       SONAR_PROJECT_NAME: ${{ github.event.repository.name }}
@@ -61,6 +69,11 @@ jobs:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
       - uses: SonarSource/sonarqube-scan-action@v6
         env:
+          # global SONAR_TOKEN for production SonarQube instance,
+          # has access to all projects with key pattern
+          # '^metro-digital-inner-source_.*'
+          # update project key in SonarQube or
+          # or overwrite with different token in github secrets if needed
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
