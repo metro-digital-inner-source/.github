@@ -11,20 +11,22 @@
 #    - if you generate via local project creation, use at least {{GITHUB_ORG}}_{{REPO_NAME}}
 #    - you can also update the key in SonarQube and remove the {{UUID}} suffix
 # 2. In SonarQube Navigate and check the tutorials for GitHub Actions at
-#    https://{{ SONAR_HOST_URL }}/tutorials?id={{ SONAR_PROJECT_KEY }}&selectedTutorial=github-actions
+#    {{SONAR_HOST_URL}}/tutorials?id={{SONAR_PROJECT_KEY}}&selectedTutorial=github-actions
 #    and follow the instructions that best fit your project, Do not overwrite this file,
 #    instead, add extra steps as needed.
-# 3. SONAR_HOST_URL is defined as organization-level variable and,
-#    resolves to the prod enterprise SonarQube instance URL,
-#    update if you are using a different SonarQube instance
-# 4. There is an organization-level SONAR_TOKEN secret in GitHub, with scan access to all
+#
+# Notes:
+# 1. SONAR_HOST_URL is defined as organization-level variable and,
+#    resolves to the production SonarQube instance
+#    change it if you are using a different SonarQube instance.
+# 2. There is an organization-level SONAR_TOKEN secret in GitHub, with scan access to all
 #    SonarQube projects with the key pattern '^metro-digital-inner-source_.*'.
 #    you can overwrite the token by adding a new token to the repository secrets
 #
-# Notes:
-#   - For GitHub PR decoration, ensure DevOps Platform Integration is configured in SonarQube
+# Others:
+#   - For GitHub PR decoration, ensure DevOps Platform Integration is configured
 #     and the project is linked to this GitHub repository.
-#     Go to Project Settings > General Settings > DevOps Platform Integration
+#     In SonarQube go to Project Settings > General Settings > DevOps Platform Integration
 #     and make sure the required configuration values are set.
 #   - If you do not want SonarQube to run on all PR events, use a label-based condition
 #     (for example, only run when the PR has the `sonarqube-scan` label).
@@ -69,11 +71,7 @@ jobs:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
       - uses: SonarSource/sonarqube-scan-action@v7
         env:
-          # global SONAR_TOKEN for production SonarQube instance,
-          # has access to all projects with key pattern
-          # '^metro-digital-inner-source_.*'
-          # update project key in SonarQube or
-          # overwrite with different token in github secrets if needed
+          # global SONAR_TOKEN, read note 2 in the section above
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
@@ -86,6 +84,7 @@ jobs:
       # - uses: SonarSource/sonarqube-quality-gate-action@v1
       #   if: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
       #   env:
+      #     # global SONAR_TOKEN, read note 2 in the section above
       #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       #   timeout-minutes: 5
       #   with:
