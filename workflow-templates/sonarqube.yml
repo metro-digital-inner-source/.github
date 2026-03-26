@@ -39,7 +39,7 @@ name: SonarQube Scan
 on:
   push:
     branches:
-      - master
+      - $default-branch
     paths-ignore:
       - .github/**
       - .gitignore
