@@ -4,35 +4,46 @@
 # Minimal SonarQube workflow template for static code analysis.
 # Customize as needed for your project requirements.
 #
-# Prerequisites:
+## Prerequisites:
+#
 # 1. Create a SonarQube project and obtain the {{ SONAR_PROJECT_KEY }}.
-#    - if you onboard from SonarQube via GitHub integration, the project key will
-#      be automatically generated in the format of {{GITHUB_ORG}}_{{REPO_NAME}}_{{UUID}}
-#    - if you generate via local project creation, use at least {{GITHUB_ORG}}_{{REPO_NAME}}
-#    - you can also update the key in SonarQube and remove the {{UUID}} suffix
-# 2. In SonarQube Navigate and check the tutorials for GitHub Actions at
+#    - If onboarded via SonarQube GitHub integration, the project key is
+#      automatically generated in the format:
+#      {{GITHUB_ORG}}_{{REPO_NAME}}_{{UUID}}.
+#    - If created locally, use at least:
+#      {{GITHUB_ORG}}_{{REPO_NAME}}.
+#    - You may update the key in SonarQube and remove the {{UUID}} suffix.
+#
+# 2. In SonarQube, navigate to the GitHub Actions tutorial:
 #    {{SONAR_HOST_URL}}/tutorials?id={{SONAR_PROJECT_KEY}}&selectedTutorial=github-actions
-#    and follow the instructions that best fit your project, Do not overwrite this file,
-#    instead, add extra steps as needed.
+#    Follow the instructions that best fit your project.
+#    Do not overwrite this file — add extra steps as needed instead.
 #
-# Notes:
-# 1. SONAR_HOST_URL is defined as organization-level variable and,
-#    resolves to the production SonarQube instance
-#    change it if you are using a different SonarQube instance.
-# 2. There is an organization-level SONAR_TOKEN secret in GitHub, with scan access to all
-#    SonarQube projects with the key pattern '^metro-digital-inner-source_.*'.
-#    you can overwrite the token by adding a new token to the repository secrets
+## Notes:
 #
-# Others:
-#   - For GitHub PR decoration, ensure DevOps Platform Integration is configured
-#     and the project is linked to this GitHub repository.
-#     In SonarQube go to Project Settings > General Settings > DevOps Platform Integration
-#     and make sure the required configuration values are set.
-#   - If you do not want SonarQube to run on all PR events, use a label-based condition
-#     (for example, only run when the PR has the `sonarqube-scan` label).
-#     You can implement this by using the actions/labeler workflow.
+# 1. SONAR_HOST_URL is defined as an organization-level variable and
+#    resolves to the production SonarQube instance.
+#    Change it if you are using a different instance.
 #
-# Contact:  Channel: SonarQube @ Deployment Tools in Microsoft Teams
+# 2. An organization-level SONAR_TOKEN secret exists in GitHub with
+#    scan access to all SonarQube projects matching the pattern:
+#    '^metro-digital-inner-source_.*'.
+#    You can override it by adding a new token in repository secrets.
+#
+## Additional:
+#
+# - For GitHub PR decoration, ensure DevOps Platform Integration is
+#   configured and the project is linked to this repository.
+#   In SonarQube, go to:
+#   Project Settings > General Settings > DevOps Platform Integration,
+#   and verify all required values are set.
+#
+# - To limit execution on PR events, use a label-based condition
+#   (e.g., run only when the PR has the `sonarqube-scan` label).
+#   This can be implemented using the actions/labeler workflow.
+#
+# Contact:
+#   Channel: SonarQube @ Deployment Tools (Microsoft Teams)
 
 name: SonarQube Scan
 
@@ -49,12 +60,15 @@ on:
 
 jobs:
   sonarqube:
-    # Skip SonarQube scans for Dependabot PRs as it does not have SONAR_TOKEN access.
-    # If this workflow is required in branch protection settings,
-    # Dependabot PRs can be blocked from merging by this check.
-    # Move the condition to each step or use PR labels instead
-    # to skip the job cleanly for Dependabot-originated PRs.
-    if: github.actor != 'dependabot[bot]' && secrets.SONAR_TOKEN != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork != true)
+    # Skip SonarQube scans for Dependabot PRs, as they do not have
+    # access to SONAR_TOKEN.
+    #
+    # If this workflow is required by branch protection rules,
+    # Dependabot PRs may be blocked from merging due to this check.
+    #
+    # To avoid this, move the condition to individual steps or use
+    # PR labels to skip the job cleanly for Dependabot PRs.
+    if: github.actor != 'dependabot[bot]' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork != true)
     name: SonarQube scan
     runs-on:
       - self-hosted
@@ -77,11 +91,13 @@ jobs:
           args: >
             -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }}
             -Dsonar.projectName=${{ env.SONAR_PROJECT_NAME }}
-      # If you wish to fail your job when the Quality Gate is red, uncomment the
-      # following lines. This would typically be used to fail a deployment.
-      # We do not recommend to use this in a pull request. Prefer using pull request
-      # decoration instead.
-      # - uses: SonarSource/sonarqube-quality-gate-action@v1
+
+      # To fail the job when the Quality Gate is red, uncomment the
+      # lines below. This is typically used to block deployments.
+      #
+      # This is not recommended for pull requests. Prefer using
+      # pull request decoration instead.
+      # - uses: SonarSource/sonarqube-quality-gate-action@v1.2.0
       #   if: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
       #   env:
       #     # global SONAR_TOKEN, read note 2 in the section above
